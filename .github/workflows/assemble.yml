@@ -23,7 +23,11 @@ jobs:
           ${{ runner.os }}-gradle-
     - name: gradlew build
       run: ./gradlew build
-    - name: Run a multi-line script
-      run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
+    - name: Deploy
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v1
+      with:
+        target_branch: gh-pages
+        build_dir: public
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_PAT }}

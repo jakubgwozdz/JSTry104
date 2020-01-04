@@ -15,7 +15,7 @@ val output by lazy { document.getElementById("out")!! as HTMLInputElement }
 
 class TryNo104 {
 
-    fun test() = SomeData("*").data
+    fun test() = SomeData("+").data
 
     fun click() {
         output.value = input.value.map { "$it" }.joinToString(test(), "<", ">")
