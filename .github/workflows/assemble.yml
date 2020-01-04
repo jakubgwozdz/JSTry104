@@ -13,7 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Cache
+    - name: Cache Gradle
+      id: cachegradle
       continue-on-error: true
       uses: actions/cache@v1.0.3
       with:
@@ -21,6 +22,15 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
+    - name: Cache Node
+      id: cachenode
+      continue-on-error: true
+      uses: actions/cache@v1.0.3
+      with:
+        path: ~/build/js
+        key: ${{ runner.os }}-js-${{ hashFiles('**/*.gradle.kts') }}
+        restore-keys: |
+          ${{ runner.os }}-js-
     - name: gradlew build
       run: ./gradlew build
     - name: Deploy
