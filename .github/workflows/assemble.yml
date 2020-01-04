@@ -22,7 +22,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
     - name: gradlew build
-      run: ./gradlew.sh build
+      run: ./gradlew build
     - name: Run a multi-line script
       run: |
         echo Add other actions to build,
