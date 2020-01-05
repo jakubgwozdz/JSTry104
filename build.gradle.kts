@@ -8,9 +8,11 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-js"))
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.3")
+    compile(kotlin("stdlib-js"))
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.3")
+    compile("org.jetbrains.kotlinx:kotlinx-html-js:0.6.12")
+
+    testCompile(kotlin("test-js"))
 }
 
 kotlin.target {
@@ -24,10 +26,9 @@ tasks {
             sourceMap = true
             sourceMapEmbedSources = "always"
             moduleKind = "umd"
+            verbose = true
         }
     }
-
-    println("aaa " + compileKotlinJs.get().outputFile.parent)
 
     val unpackLibraries by creating {
         group = "build"

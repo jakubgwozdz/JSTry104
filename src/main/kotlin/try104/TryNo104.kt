@@ -4,12 +4,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.html.InputType
+import kotlinx.html.classes
+import kotlinx.html.dom.append
+import kotlinx.html.id
+import kotlinx.html.js.div
+import kotlinx.html.js.input
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLInputElement
 import try104.somepackage.SomeData
 import kotlin.browser.document
 import kotlin.coroutines.CoroutineContext
-import kotlin.dom.createElement
 
 fun click() = TryNo104().click()
 
@@ -18,20 +23,16 @@ fun load() {
     coroutinesDiv.firstElementChild!!.remove()
 
     (1..6).forEach { increment ->
-        val div = coroutinesDiv.appendChild(document.createElement("div"))
+        val div = coroutinesDiv.append.div { }
 
         val inputs = (1..7)
             .map {
-                document.createElement("input") {
-                    (this as HTMLInputElement).value = "$it"
+                div.append.input(type = InputType.text) {
+                    value = "$it"
                     id = "box-$increment-$it"
-                } as HTMLInputElement
+                    classes = setOf("coroutines-text", "increment-$increment")
+                }
             }
-            .onEach {
-                it.type = "text"
-                it.classList.add("coroutines-text")
-            }
-            .onEach { div.appendChild(it) }
         TryNo104CoroutineScope(inputs, increment).start()
     }
 
@@ -59,10 +60,11 @@ class TryNo104CoroutineScope(val inputs: List<HTMLInputElement>, val increment: 
             delay(increment * 330L)
             var i = 0
             while (true) {
-                inputs.forEach { it.classList.remove("increment-$increment") }
-                inputs[i % inputs.size].classList.add("increment-$increment")
-                i = i + increment
-                delay(1000 - increment * 100L)
+                repeat(100) {
+                    inputs[i % inputs.size].style.opacity = "${100-it}%"
+                    delay(10L - increment)
+                }
+                i ++
             }
         }
     }
