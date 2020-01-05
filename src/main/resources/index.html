@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Try no 104</title>
     <link rel="stylesheet" type="text/css" href="style.css"/>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/darkly/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-rCA2D+D9QXuP2TomtQwd+uP50EHjpafN+wruul0sXZzX/Da7Txn4tB9aLMZV4DZm" crossorigin="anonymous">
 </head>
 
 <body onload="JSTry104.try104.load()">
@@ -12,13 +14,17 @@
 <script type="text/javascript" src="kotlinx-coroutines-core.js"></script>
 <script type="text/javascript" src="kotlinx-html-js.js"></script>
 <script type="text/javascript" src="JSTry104.js"></script>
-<div id="testDiv">
-    <input id="in" type="text" value="test data"/>
-    <input id="btn" type="button" value="split with kotlin" onclick="JSTry104.try104.click()">
-    <input id="out" type="text"/>
-</div>
-<div id="coroutinesDiv">
-    <p id="placeholder">If everything goes ok, this be replaced by some generated content</p>
+<div class="container">
+    <p></p>
+    <div id="testDiv" class="row">
+        <input class="col-3 form-control" id="in" type="text" value="test data"/>
+        <input class="col-2 form-control" id="btn" type="button" value="split with kotlin" onclick="JSTry104.try104.click()">
+        <input class="col-7 form-control" id="out" type="text"/>
+    </div>
+    <p></p>
+    <div id="coroutinesDiv">
+        <p id="placeholder">If everything goes ok, this be replaced by some generated content</p>
+    </div>
 </div>
 </body>
 </html>

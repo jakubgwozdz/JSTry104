@@ -10,7 +10,9 @@ import kotlinx.html.dom.append
 import kotlinx.html.id
 import kotlinx.html.js.div
 import kotlinx.html.js.input
+import kotlinx.html.style
 import org.w3c.dom.HTMLDivElement
+import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement
 import try104.somepackage.SomeData
 import kotlin.browser.document
@@ -22,15 +24,19 @@ fun load() {
     println("load()")
     coroutinesDiv.firstElementChild!!.remove()
 
+    val text = "Coroutines are more fun than television!!!".reversed().iterator()
+
     (1..6).forEach { increment ->
         val div = coroutinesDiv.append.div { }
 
         val inputs = (1..7)
             .map {
                 div.append.input(type = InputType.text) {
-                    value = "$it"
+                    value = "${text.nextChar()}"
                     id = "box-$increment-$it"
                     classes = setOf("coroutines-text", "increment-$increment")
+                }.also {
+                    it.style.opacity = "1%"
                 }
             }
         TryNo104CoroutineScope(inputs, increment).start()
@@ -53,18 +59,18 @@ class TryNo104 {
 
 }
 
-class TryNo104CoroutineScope(val inputs: List<HTMLInputElement>, val increment: Int) : CoroutineScope {
+class TryNo104CoroutineScope(val inputs: List<HTMLElement>, val increment: Int) : CoroutineScope {
 
     fun start() {
         launch {
-            delay(increment * 330L)
-            var i = 0
+            var i = 6
+            val times = 20 + 7 * increment
             while (true) {
-                repeat(100) {
-                    inputs[i % inputs.size].style.opacity = "${100-it}%"
-                    delay(10L - increment)
+                repeat(times) {
+                    inputs[i % inputs.size].style.opacity = "${100-(100*it)/times}%"
+                    delay(16L)
                 }
-                i ++
+                i += 6
             }
         }
     }
