@@ -22,48 +22,32 @@ tasks {
     compileKotlinJs {
         kotlinOptions {
             sourceMap = true
+            sourceMapEmbedSources = "always"
             moduleKind = "umd"
         }
     }
 
-    val unpackKotlinJsStdlib by creating {
-        group = "build"
-        description = "Unpack the Kotlin JavaScript standard library"
-        val outputDir = file("$buildDir/$name")
-        val compileClasspath = configurations["compileClasspath"]
-        inputs.property("compileClasspath", compileClasspath)
-        outputs.dir(outputDir)
-        doLast {
-            val kotlinStdLibJar = compileClasspath.single {
-                it.name.matches(Regex("kotlin-stdlib-js-.+\\.jar"))
-            }
-            copy {
-                includeEmptyDirs = false
-                from(zipTree(kotlinStdLibJar))
-                into(outputDir)
-                include("**/*.js")
-                exclude("META-INF/**")
-            }
-        }
-    }
+    println("aaa " + compileKotlinJs.get().outputFile.parent)
 
-    val unpackKotlinJsCoroutines by creating {
+    val unpackLibraries by creating {
         group = "build"
-        description = "Unpack the Kotlin JavaScript Coroutines library"
+        description = "Unpack the libraries"
         val outputDir = file("$buildDir/$name")
         val compileClasspath = configurations["compileClasspath"]
         inputs.property("compileClasspath", compileClasspath)
         outputs.dir(outputDir)
         doLast {
-            val kotlinCoroutinesJar = compileClasspath.single {
-                it.name.matches(Regex("kotlinx-coroutines-core-js-.+\\.jar"))
-            }
-            copy {
-                includeEmptyDirs = false
-                from(zipTree(kotlinCoroutinesJar))
-                into(outputDir)
-                include("**/*.js")
-                exclude("META-INF/**")
+            compileClasspath.forEach {
+                it.name.matches(Regex("kotlin-stdlib-js-.+\\.jar"))
+                copy {
+                    includeEmptyDirs = false
+                    from(zipTree(it))
+                    into(outputDir)
+                    exclude("**/*.kotlin_metadata")
+                    exclude("**/*.meta.js")
+                    exclude("META-INF/**")
+                    exclude("**/*.kjsm")
+                }
             }
         }
     }
@@ -72,12 +56,13 @@ tasks {
         group = "build"
         description = "Assemble the web application"
         includeEmptyDirs = false
-        from(unpackKotlinJsStdlib)
-        from(unpackKotlinJsCoroutines)
-        from(compileKotlinJs.get().outputFile.parent) {
-            exclude("**/*.kjsm")
-        }
+        from(unpackLibraries)
+        from(compileKotlinJs.get().outputFile.parent)
         from(processResources.get().destinationDir)
+        exclude("**/*.kotlin_metadata")
+        exclude("**/*.meta.js")
+        exclude("META-INF/**")
+        exclude("**/*.kjsm")
         into("$buildDir/web")
     }
 

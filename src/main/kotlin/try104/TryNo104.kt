@@ -16,22 +16,24 @@ fun click() = TryNo104().click()
 fun load() {
     println("load()")
     coroutinesDiv.firstElementChild!!.remove()
-    val inputs = (1..7)
-        .map {
-            document.createElement("input") {
-                (this as HTMLInputElement).value = "$it"
-                id = "box$it"
-            } as HTMLInputElement
-        }
-        .onEach {
-            it.type = "text"
-            it.classList.add("coroutines-text")
-        }
-        .onEach { coroutinesDiv.appendChild(it) }
 
-    TryNo104CoroutineScope(inputs, 1).start()
-    TryNo104CoroutineScope(inputs, 2).start()
-    TryNo104CoroutineScope(inputs, 3).start()
+    (1..6).forEach { increment ->
+        val div = coroutinesDiv.appendChild(document.createElement("div"))
+
+        val inputs = (1..7)
+            .map {
+                document.createElement("input") {
+                    (this as HTMLInputElement).value = "$it"
+                    id = "box-$increment-$it"
+                } as HTMLInputElement
+            }
+            .onEach {
+                it.type = "text"
+                it.classList.add("coroutines-text")
+            }
+            .onEach { div.appendChild(it) }
+        TryNo104CoroutineScope(inputs, increment).start()
+    }
 
 }
 
@@ -57,9 +59,10 @@ class TryNo104CoroutineScope(val inputs: List<HTMLInputElement>, val increment: 
             delay(increment * 330L)
             var i = 0
             while (true) {
-                inputs[i % inputs.size].value = "$increment"
+                inputs.forEach { it.classList.remove("increment-$increment") }
+                inputs[i % inputs.size].classList.add("increment-$increment")
                 i = i + increment
-                delay(1000)
+                delay(1000 - increment * 100L)
             }
         }
     }

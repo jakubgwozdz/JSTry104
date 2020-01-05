@@ -4,3 +4,27 @@
     width: 2em;
     text-align: center;
 }
+
+.increment-1 {
+    background-color: #33eeee;
+}
+
+.increment-2 {
+    background-color: #ee33ee;
+}
+
+.increment-3 {
+    background-color: #eeee33;
+}
+
+.increment-4 {
+    background-color: #3333ee;
+}
+
+.increment-5 {
+    background-color: #ee3333;
+}
+
+.increment-6 {
+    background-color: #33ee33;
+}
