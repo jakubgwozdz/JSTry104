@@ -1,17 +1,14 @@
 package cryostasis
 
-import intcode.Intcode
-import intcode.disassemblyProgram
-import intcode.fullLines
-import intcode.parseIntcode
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.GlobalScope
+import intcode.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
+import org.w3c.dom.HTMLButtonElement
+import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.events.Event
 import kotlin.browser.document
@@ -38,19 +35,41 @@ fun disassembly(e: Event) {
     decompiledProgram = program
 }
 
+var intcodeProcess : IntcodeProcess? = null
+
+data class IntcodeProcess(
+    val computer: Intcode,
+    val inChannel: Channel<Long>,
+    val outChannel: Channel<Long>,
+    val job: Job
+)
+
+
 @FlowPreview
 fun runIntcode(e: Event) {
+
+    intcodeProcess?.job?.cancel()
+
     val program = view.programTextArea.value
     val memory = parseIntcode(program)
-    val inChannel = Channel<Long>()
+    val inChannel: Channel<Long> = Channel<Long>()
     val outChannel = Channel<Long>()
     val computer = Intcode(memory, inChannel, outChannel)
 
-    GlobalScope.launch {
+    (e.currentTarget as HTMLElement?)?.innerText = "Restart"
+
+    val job = GlobalScope.launch {
         launch {
-            computer.run()
-            inChannel.close()
-            outChannel.close()
+            try {
+                computer.run()
+                println("Intcode finished")
+            } catch (e: Exception) {
+                println(e)
+                throw e;
+            } finally {
+                inChannel.close()
+                outChannel.close()
+            }
         }
 
         outChannel.consumeAsFlow()
@@ -59,6 +78,7 @@ fun runIntcode(e: Event) {
             .onEach {
                 view.gameOutputPre.textContent += it + "\n"
                 view.gameOutputPre.scrollTop = view.gameOutputPre.scrollHeight.toDouble()
+                if (it == "Command?") view.gameInputInput.focus()
             }
 //            .outputs()
 //            .collect {
@@ -68,8 +88,17 @@ fun runIntcode(e: Event) {
 //                }
 //            }
             .collect()
-
-
     }
 
+    intcodeProcess = IntcodeProcess(computer, inChannel, outChannel, job)
+
+}
+
+@FlowPreview
+fun commandEntered(e:Event) {
+    val command = view.gameInputInput.value
+    view.gameInputInput.value = ""
+    GlobalScope.launch {
+        intcodeProcess?.inChannel?.writeln(command)
+    }
 }

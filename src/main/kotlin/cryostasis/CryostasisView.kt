@@ -3,8 +3,8 @@ package cryostasis
 import kotlinx.coroutines.FlowPreview
 import kotlinx.html.*
 import kotlinx.html.dom.append
-import kotlinx.html.js.div
-import kotlinx.html.js.onClickFunction
+import kotlinx.html.js.*
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLPreElement
 import org.w3c.dom.HTMLTextAreaElement
 import kotlin.browser.document
@@ -13,7 +13,8 @@ class CryostasisView(
     val programTextArea: HTMLTextAreaElement,
     val disassemblyPre: HTMLPreElement,
     val statusPre: HTMLPreElement,
-    val gameOutputPre: HTMLPreElement
+    val gameOutputPre: HTMLPreElement,
+    val gameInputInput: HTMLInputElement
 )
 
 @FlowPreview
@@ -23,7 +24,8 @@ val view by lazy {
             getElementById("program-input") as HTMLTextAreaElement,
             getElementById("disassembly-output") as HTMLPreElement,
             getElementById("intcode-state") as HTMLPreElement,
-            getElementById("game-output") as HTMLPreElement
+            getElementById("game-output") as HTMLPreElement,
+            getElementById("game-input") as HTMLInputElement
         )
     }
 }
@@ -47,7 +49,7 @@ val container by lazy {
                     +"program"
                 }
             }
-            textArea(classes = "form-control text-monospace") {
+            textArea(classes = "form-control") {
                 +cryostasis.jakubgwozdz.program
                 id = "program-input"
             }
@@ -96,9 +98,13 @@ val container by lazy {
             }
             div("col-10") {
                 div("card card-body") {
-                    pre("rounded") {
+                    pre("border border-info rounded") {
                         +"...."
                         id = "game-output"
+                    }
+                    input(type = InputType.text, classes = "form-control text-light bg-secondary border-info") {
+                        id = "game-input"
+                        onChangeFunction = ::commandEntered
                     }
                 }
             }
