@@ -28,3 +28,17 @@
 .increment-6 {
     background-color: #33ee33;
 }
+
+#disassembly-output {
+    overflow: auto;
+    height: 18em;
+    resize: vertical;
+}
+
+#game-output {
+    overflow: auto;
+    height: 27em;
+    resize: vertical;
+    white-space: pre-wrap;
+}
+
