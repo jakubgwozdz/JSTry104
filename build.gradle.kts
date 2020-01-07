@@ -25,8 +25,10 @@ tasks {
         kotlinOptions {
             sourceMap = true
             sourceMapEmbedSources = "always"
+            sourceMapPrefix = "../../"
             moduleKind = "umd"
             verbose = true
+            metaInfo = false
         }
     }
 

@@ -1,13 +1,15 @@
 package cryostasis
 
 import intcode.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import org.w3c.dom.HTMLButtonElement
+import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.events.Event
@@ -23,6 +25,7 @@ fun load() {
 
 var decompiledProgram: String = ""
 
+@FlowPreview
 fun disassembly(e: Event) {
     val program = view.programTextArea.value
     if (program != decompiledProgram) {
@@ -35,13 +38,14 @@ fun disassembly(e: Event) {
     decompiledProgram = program
 }
 
-var intcodeProcess : IntcodeProcess? = null
+var intcodeProcess: IntcodeProcess? = null
 
 data class IntcodeProcess(
     val computer: Intcode,
     val inChannel: Channel<Long>,
     val outChannel: Channel<Long>,
-    val job: Job
+    val job: Job,
+    val searchState: SearchState
 )
 
 
@@ -49,14 +53,18 @@ data class IntcodeProcess(
 fun runIntcode(e: Event) {
 
     intcodeProcess?.job?.cancel()
+    view.reset()
 
     val program = view.programTextArea.value
     val memory = parseIntcode(program)
-    val inChannel: Channel<Long> = Channel<Long>()
+    val inChannel = Channel<Long>()
     val outChannel = Channel<Long>()
-    val computer = Intcode(memory, inChannel, outChannel)
+    val computer = Intcode(memory, inChannel, outChannel, debug = ::debugger)
 
     (e.currentTarget as HTMLElement?)?.innerText = "Restart"
+
+    val state = SearchState()
+    val stateUpdater = SearchUpdater(state)
 
     val job = GlobalScope.launch {
         launch {
@@ -78,27 +86,51 @@ fun runIntcode(e: Event) {
             .onEach {
                 view.gameOutputPre.textContent += it + "\n"
                 view.gameOutputPre.scrollTop = view.gameOutputPre.scrollHeight.toDouble()
-                if (it == "Command?") view.gameInputInput.focus()
             }
-//            .outputs()
-//            .collect {
-//                when (it) {
-//                    is Prompt -> inChannel.writeln(decisionMaker.makeDecision())
-//                    else -> stateUpdater.update(it)
-//                }
-//            }
+            .outputs()
+            .onEach {
+                when (it) {
+                    is Prompt -> view.gameInputInput.focus()
+                    else -> {
+                        stateUpdater.update(it)
+                        view.shipScanStatePre.textContent = formatState(state)
+                    }
+                }
+            }
             .collect()
     }
 
-    intcodeProcess = IntcodeProcess(computer, inChannel, outChannel, job)
+    intcodeProcess = IntcodeProcess(computer, inChannel, outChannel, job, state)
 
 }
 
 @FlowPreview
-fun commandEntered(e:Event) {
+fun commandEntered(e: Event) {
     val command = view.gameInputInput.value
+    view.gameOutputPre.textContent += "$command\n"
     view.gameInputInput.value = ""
     GlobalScope.launch {
         intcodeProcess?.inChannel?.writeln(command)
+        Direction.values()
+            .filter { it.text == command }
+            .forEach { intcodeProcess?.searchState?.lastMovement = it }
+    }
+}
+
+@FlowPreview
+fun debugger(computer: Intcode) {
+    view.intcodeStatePre.textContent = """ip: ${computer.ip}
+        |rb: ${computer.rb}
+        |${dissassembly(computer.memory, computer.ip)}
+    """.trimMargin()
+}
+
+fun formatState(state: SearchState) = buildString {
+    state.knownRooms.forEach { (roomId, room) ->
+        append("- $roomId\n")
+        val knownExits = state.knownExits[roomId] ?: mutableMapOf()
+        room.doors.forEach {
+            append(" `- $it - ${knownExits[it] ?: "???"}\n")
+        }
     }
 }

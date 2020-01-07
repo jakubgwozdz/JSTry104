@@ -36,14 +36,14 @@ class Intcode(
     val inBuffer: InBuffer<Long>,
     val outBuffer: OutBuffer,
     val id: Any = "Intcode",
-    val debug: Boolean = false
+    val debug: (Intcode)->Unit = {}
 ) {
     constructor(
         memory: Memory,
         receiveChannel: ReceiveChannel<Long>,
         sendChannel: SendChannel<Long>,
         id: Any = "Intcode",
-        debug: Boolean = false
+        debug: (Intcode)->Unit = {}
     ) : this(memory, ChannelInBuffer(id, receiveChannel), ChannelOutBuffer(id, sendChannel), id, debug)
 
     var ip: Long = 0 // instruction pointer
@@ -89,8 +89,9 @@ class Intcode(
     // main loop
     suspend fun run() {
         while (true) {
-            if (debug)
-                println("${ip.toString().padStart(6)}: ${dissassembly(memory, ip)}")
+            debug(this)
+//            if (debug)
+//                println("${ip.toString().padStart(6)}: ${dissassembly(memory, ip)}")
             when (opcode(operation)) {
                 1L -> opADD()
                 2L -> opMUL()
