@@ -15,16 +15,26 @@ class CryostasisView(
     val intcodeStatePre: HTMLPreElement,
     val gameOutputPre: HTMLPreElement,
     val gameInputInput: HTMLInputElement,
-    val shipScanStatePre: HTMLPreElement
+    val shipScanStatePre: HTMLPreElement,
+    val autoScanButton: HTMLButtonElement
 ) {
     fun reset() {
         intcodeStatePre.textContent = "...."
         shipScanStatePre.textContent = "...."
         gameOutputPre.textContent = "...."
     }
+
+    fun println(line: String) {
+        gameOutputPre.textContent += line + "\n"
+        gameOutputPre.scrollTop = gameOutputPre.scrollHeight.toDouble()
+
+    }
+
+    fun displayState(state: SearchState) {
+        shipScanStatePre.textContent = formatState(state)
+    }
 }
 
-@FlowPreview
 val view by lazy {
 
     inline fun <reified K : HTMLElement> Document.byId(elementId: String) =
@@ -37,14 +47,14 @@ val view by lazy {
             byId("intcode-state"),
             byId("game-output"),
             byId("game-input"),
-            byId("shipscan-state")
+            byId("shipscan-state"),
+            byId("auto-scan")
         )
     }
 }
 
 // build DOM using kontlinx.html fluent builders
 
-@FlowPreview
 val container by lazy {
     document.body!!.append.div("container text-monospace") {
         h1 { +"Cryostasis" }
@@ -125,12 +135,22 @@ val container by lazy {
                         +"...."
                         id = "game-output"
                     }
-                    input(
-                        type = InputType.text,
-                        classes = "form-control text-light bg-secondary border-info"
-                    ) {
-                        id = "game-input"
-                        onChangeFunction = ::commandEntered
+                    div("input-group") {
+                        input(
+                            type = InputType.text,
+                            classes = "form-control text-light bg-secondary border-info"
+                        ) {
+                            id = "game-input"
+                            onChangeFunction = ::commandEntered
+                        }
+                        div("input-group-append") {
+                            button(type = ButtonType.button, classes = "btn btn-outline-info") {
+                                +"Scan for me instead"
+                                attributes["data-toggle"] = "buttons"
+                                id = "auto-scan"
+                                onClickFunction = ::autoscanOn
+                            }
+                        }
                     }
                 }
                 div("card card-body small text-light") {
@@ -150,5 +170,18 @@ val container by lazy {
             }
         }
 
+    }
+}
+
+fun formatState(state: SearchState) = buildString {
+    state.knownRooms.forEach { (roomId, room) ->
+        append("- $roomId ${state.knownDirectionsToPlaces[roomId]?.map { it.second }}\n")
+        val knownExits = state.knownExits[roomId] ?: mutableMapOf()
+        room.doors.forEach {
+            val itemsCount = if (state.inventory.isNotEmpty()) "- ${state.inventory.size} items -" else "-"
+            append(
+                " `- $it $itemsCount ${knownExits[it] ?: "???"}\n"
+            )
+        }
     }
 }

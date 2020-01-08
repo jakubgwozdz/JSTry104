@@ -48,32 +48,32 @@ data class SearchState(
 )
 
 
-class SearchUpdater(val state: SearchState) {
+class SearchUpdater {
 
-    fun update(output: Output) = when (output) {
-        is RoomDescription -> room(output)
-        is RoomWithTeleportDescription -> teleport(output)
-        is TakeActionDescription -> itemTaken(output)
-        is DropActionDescription -> itemDrop(output)
+    fun update(state: SearchState, output: Output) = when (output) {
+        is RoomDescription -> room(state, output)
+        is RoomWithTeleportDescription -> teleport(state, output)
+        is TakeActionDescription -> itemTaken(state, output)
+        is DropActionDescription -> itemDrop(state, output)
         is Prompt -> error("'Command?' not allowed here")
         is Success -> state.result = output.code
     }
 
-    private fun itemTaken(output: TakeActionDescription) {
+    private fun itemTaken(state: SearchState, output: TakeActionDescription) {
         val item = output.item
         state.inventory += item
         state.knownRooms.compute(state.currentRoomId!!) { _, room -> room!!.copy(items = room.items - item) }
     }
 
-    private fun itemDrop(output: DropActionDescription) {
+    private fun itemDrop(state: SearchState, output: DropActionDescription) {
         val item = output.item
         state.inventory -= item
         state.knownRooms.compute(state.currentRoomId!!) { _, room -> room!!.copy(items = room.items + item) }
     }
 
-    private fun teleport(description: RoomWithTeleportDescription) {
+    private fun teleport(state: SearchState, description: RoomWithTeleportDescription) {
         val room = description.room
-        updateMap(room)
+        updateMap(state, room)
         state.lastMovement = null
         state.movements.clear()
         state.movements.addAll(state.knownDirectionsToPlaces[room.name]!!)
@@ -86,55 +86,44 @@ class SearchUpdater(val state: SearchState) {
         }
     }
 
-    private fun room(description: RoomDescription) {
+    private fun room(state: SearchState, description: RoomDescription) {
         val room = description.room
-        updateMap(room)
+        updateMap(state, room)
     }
 
-    private fun updateMap(room: Room) {
+    private fun updateMap(state: SearchState, room: Room) {
         val prevRoomId = state.currentRoomId
 
-        val visitedAlready =
-            state.knownRooms[room.name]?.also { if (it != room) error("this room was $it, now it's $room") }
         state.knownRooms[room.name] = room
         state.currentRoomId = room.name
 
         if (prevRoomId != null && state.lastMovement != null) {
-            state.knownExits.computeIfAbsent(prevRoomId) { mutableMapOf() }
-                ?.set(state.lastMovement!!, room.name)
+            state.knownExits.computeIfAbsent(prevRoomId) { mutableMapOf() }[state.lastMovement!!] = room.name
         }
         state.knownDirectionsToPlaces.computeIfAbsent(room.name) {
             state.movements.toList().compact { it.first }
         }
     }
+
+    fun moving(state: SearchState, direction: Direction) {
+        state.lastMovement = direction
+        val shortcut = state.movements.toList().compact { it.first }
+        if (shortcut.size < state.movements.size) {
+            state.movements.clear()
+            state.movements.addAll(shortcut)
+        }
+        state.movements += state.currentRoomId!! to direction
+    }
 }
 
-private fun <E> MutableList<E>.removeLast() {
-    removeAt(size - 1)
-}
+class ShipScan {
 
-private fun <K, V : Any> MutableMap<K, V>.compute(key: K, op: (K, V?) -> V?) =
-    op(key, this[key]).also { if (it != null) this[key] = it else this.remove(key) }
+    fun moveToNextUnknown(state: SearchState): String? {
+        return (state.lastMovement ?: Direction.N)
+            .let { listOf(it.left, it, it.right, it.back) }
+            .filter { it in state.knownRooms[state.currentRoomId]!!.doors }
+            .firstOrNull { it !in state.knownExits[state.currentRoomId]?.keys ?: emptyList<Direction>() }
+            ?.text
+    }
 
-private fun <K, V : Any> MutableMap<K, V>.computeIfAbsent(key: K, op: (K) -> V?) =
-    this[key] ?: op(key)?.also { this[key] = it }
-
-private fun <K, V : Any> MutableMap<K, V>.compute(key: K, op: (K, V?) -> V) =
-    op(key, this[key]).also { this[key] = it }
-
-private fun <K, V : Any> MutableMap<K, V>.computeIfAbsent(key: K, op: (K) -> V) =
-    this[key] ?: op(key).also { this[key] = it }
-
-private fun <E, T> List<E>.compact(discriminatorOp: (E) -> T): List<E> {
-    val result = this.toList()
-
-    val loops = this.groupBy(discriminatorOp)
-        .mapValues { (_, v) -> v.count() }
-        .filterValues { it > 1 }
-        .keys
-    val i = indexOfFirst { discriminatorOp(it) in loops }
-    if (i < 0) return result
-
-    val j = indexOfLast { discriminatorOp(it) == discriminatorOp(this[i]) }
-    return (result.subList(0, i) + result.subList(j, this.size)).compact(discriminatorOp)
 }

@@ -25,7 +25,6 @@ fun load() {
 
 var decompiledProgram: String = ""
 
-@FlowPreview
 fun disassembly(e: Event) {
     val program = view.programTextArea.value
     if (program != decompiledProgram) {
@@ -48,11 +47,14 @@ data class IntcodeProcess(
     val searchState: SearchState
 )
 
+val stateUpdater = SearchUpdater()
+val shipScan = ShipScan()
 
 @FlowPreview
 fun runIntcode(e: Event) {
 
     intcodeProcess?.job?.cancel()
+    autoscanOff()
     view.reset()
 
     val program = view.programTextArea.value
@@ -64,7 +66,6 @@ fun runIntcode(e: Event) {
     (e.currentTarget as HTMLElement?)?.innerText = "Restart"
 
     val state = SearchState()
-    val stateUpdater = SearchUpdater(state)
 
     val job = GlobalScope.launch {
         launch {
@@ -83,17 +84,14 @@ fun runIntcode(e: Event) {
         outChannel.consumeAsFlow()
             .map { it.toInt().toChar() }
             .fullLines()
-            .onEach {
-                view.gameOutputPre.textContent += it + "\n"
-                view.gameOutputPre.scrollTop = view.gameOutputPre.scrollHeight.toDouble()
-            }
+            .onEach { view.println(it) }
             .outputs()
             .onEach {
                 when (it) {
-                    is Prompt -> view.gameInputInput.focus()
+                    is Prompt -> checkInput()
                     else -> {
-                        stateUpdater.update(it)
-                        view.shipScanStatePre.textContent = formatState(state)
+                        stateUpdater.update(state, it)
+                        view.displayState(state)
                     }
                 }
             }
@@ -104,16 +102,57 @@ fun runIntcode(e: Event) {
 
 }
 
+var autoscan = false
+
+var autoscanTimer: Int? = null
+
+fun autoscanOn(e: Event? = null) {
+    autoscan = true
+
+//    autoscanTimer?.let { window.clearInterval(it) }
+//    autoscanTimer = window.setInterval(::checkInput, 100)
+
+    checkInput()
+}
+
+fun autoscanOff(e: Event? = null) {
+    autoscan = false
+
+//    autoscanTimer?.let { window.clearInterval(it) }
+//    autoscanTimer = null
+
+    view.autoScanButton.classList.remove("active")
+}
+
+fun checkInput() {
+    println("checking input, $autoscan")
+    val state = intcodeProcess?.searchState
+    if (autoscan && state != null) {
+        shipScan.moveToNextUnknown(state)
+            ?.let { sendCommand(it) }
+            ?: autoscanOff()
+    } else {
+        view.gameInputInput.focus()
+    }
+}
+
 @FlowPreview
 fun commandEntered(e: Event) {
-    val command = view.gameInputInput.value
-    view.gameOutputPre.textContent += "$command\n"
+    val command = view.gameInputInput.value.trim()
+        .let { if (it.isNotBlank()) it[0].toLowerCase() + it.substring(1) else it }
+    sendCommand(command)
+}
+
+private fun sendCommand(command: String) {
+    view.println(command)
     view.gameInputInput.value = ""
     GlobalScope.launch {
         intcodeProcess?.inChannel?.writeln(command)
         Direction.values()
-            .filter { it.text == command }
-            .forEach { intcodeProcess?.searchState?.lastMovement = it }
+            .singleOrNull { it.text == command }
+            ?.let { direction ->
+                intcodeProcess?.let { stateUpdater.moving(it.searchState, direction) }
+            }
     }
 }
 
@@ -125,12 +164,3 @@ fun debugger(computer: Intcode) {
     """.trimMargin()
 }
 
-fun formatState(state: SearchState) = buildString {
-    state.knownRooms.forEach { (roomId, room) ->
-        append("- $roomId\n")
-        val knownExits = state.knownExits[roomId] ?: mutableMapOf()
-        room.doors.forEach {
-            append(" `- $it - ${knownExits[it] ?: "???"}\n")
-        }
-    }
-}
