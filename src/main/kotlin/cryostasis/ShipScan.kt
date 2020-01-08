@@ -94,8 +94,6 @@ class SearchUpdater {
     private fun updateMap(state: SearchState, room: Room) {
         val prevRoomId = state.currentRoomId
 
-        val visitedAlready =
-            state.knownRooms[room.name]?.also { if (it != room) error("this room was $it, now it's $room") }
         state.knownRooms[room.name] = room
         state.currentRoomId = room.name
 
@@ -107,7 +105,8 @@ class SearchUpdater {
         }
     }
 
-    fun move(state: SearchState, direction: Direction) {
+    fun moving(state: SearchState, direction: Direction) {
+        state.lastMovement = direction
         val shortcut = state.movements.toList().compact { it.first }
         if (shortcut.size < state.movements.size) {
             state.movements.clear()
@@ -119,6 +118,12 @@ class SearchUpdater {
 
 class ShipScan {
 
-//    fun moveToNextUnknown()
+    fun moveToNextUnknown(state: SearchState): String? {
+        return (state.lastMovement ?: Direction.N)
+            .let { listOf(it.left, it, it.right, it.back) }
+            .filter { it in state.knownRooms[state.currentRoomId]!!.doors }
+            .firstOrNull { it !in state.knownExits[state.currentRoomId]?.keys ?: emptyList<Direction>() }
+            ?.text
+    }
 
 }

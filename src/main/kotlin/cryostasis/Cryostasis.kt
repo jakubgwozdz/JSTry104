@@ -104,22 +104,36 @@ fun runIntcode(e: Event) {
 
 var autoscan = false
 
+var autoscanTimer: Int? = null
+
 fun autoscanOn(e: Event? = null) {
     autoscan = true
+
+//    autoscanTimer?.let { window.clearInterval(it) }
+//    autoscanTimer = window.setInterval(::checkInput, 100)
+
     checkInput()
 }
 
 fun autoscanOff(e: Event? = null) {
     autoscan = false
+
+//    autoscanTimer?.let { window.clearInterval(it) }
+//    autoscanTimer = null
+
     view.autoScanButton.classList.remove("active")
-    checkInput()
 }
 
 fun checkInput() {
-    if (autoscan) {
-        sendCommand(Direction.N.text)
+    println("checking input, $autoscan")
+    val state = intcodeProcess?.searchState
+    if (autoscan && state != null) {
+        shipScan.moveToNextUnknown(state)
+            ?.let { sendCommand(it) }
+            ?: autoscanOff()
+    } else {
+        view.gameInputInput.focus()
     }
-    view.gameInputInput.focus()
 }
 
 @FlowPreview
@@ -136,7 +150,9 @@ private fun sendCommand(command: String) {
         intcodeProcess?.inChannel?.writeln(command)
         Direction.values()
             .singleOrNull { it.text == command }
-            ?.let { direction -> intcodeProcess?.let { stateUpdater.move(it.searchState, direction) } }
+            ?.let { direction ->
+                intcodeProcess?.let { stateUpdater.moving(it.searchState, direction) }
+            }
     }
 }
 
