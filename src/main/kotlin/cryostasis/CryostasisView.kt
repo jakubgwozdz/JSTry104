@@ -175,7 +175,8 @@ val container by lazy {
 
 fun formatState(state: SearchState) = buildString {
     state.knownRooms.forEach { (roomId, room) ->
-        append("- $roomId ${state.knownDirectionsToPlaces[roomId]?.map { it.second }}\n")
+        append(if (roomId == state.currentRoomId) "*" else "-")
+        append(" $roomId ${state.knownDirectionsToPlaces[roomId]?.map { it.second }}\n")
         val knownExits = state.knownExits[roomId] ?: mutableMapOf()
         room.doors.forEach {
             val itemsCount = if (state.inventory.isNotEmpty()) "- ${state.inventory.size} items -" else "-"

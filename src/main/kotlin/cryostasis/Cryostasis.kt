@@ -104,23 +104,13 @@ fun runIntcode(e: Event) {
 
 var autoscan = false
 
-var autoscanTimer: Int? = null
-
 fun autoscanOn(e: Event? = null) {
     autoscan = true
-
-//    autoscanTimer?.let { window.clearInterval(it) }
-//    autoscanTimer = window.setInterval(::checkInput, 100)
-
     checkInput()
 }
 
 fun autoscanOff(e: Event? = null) {
     autoscan = false
-
-//    autoscanTimer?.let { window.clearInterval(it) }
-//    autoscanTimer = null
-
     view.autoScanButton.classList.remove("active")
 }
 
@@ -158,8 +148,8 @@ private fun sendCommand(command: String) {
 
 @FlowPreview
 fun debugger(computer: Intcode) {
-    view.intcodeStatePre.textContent = """ip: ${computer.ip}
-        |rb: ${computer.rb}
+    view.intcodeStatePre.textContent = """
+        |ip: ${computer.ip.toString().padEnd(6)} rb: ${computer.rb}
         |${dissassembly(computer.memory, computer.ip)}
     """.trimMargin()
 }
