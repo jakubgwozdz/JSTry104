@@ -10,7 +10,6 @@ import kotlinx.html.dom.append
 import kotlinx.html.id
 import kotlinx.html.js.div
 import kotlinx.html.js.input
-import kotlinx.html.style
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement

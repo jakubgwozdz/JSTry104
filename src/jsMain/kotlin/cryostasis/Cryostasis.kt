@@ -98,7 +98,8 @@ fun runIntcode(e: Event) {
             .collect()
     }
 
-    intcodeProcess = IntcodeProcess(computer, inChannel, outChannel, job, state)
+    intcodeProcess =
+        IntcodeProcess(computer, inChannel, outChannel, job, state)
 
 }
 

@@ -1,6 +1,5 @@
 package cryostasis
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.js.div
