@@ -1,10 +1,27 @@
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
+
 plugins {
     kotlin("multiplatform") version "1.3.61"
 }
 
 kotlin {
     js {
-        browser { }
+        val main by compilations.getting {
+            kotlinOptions {
+                sourceMap = true
+                sourceMapEmbedSources = "always"
+                sourceMapPrefix = "../../"
+                moduleKind = "umd"
+                verbose = true
+                metaInfo = false
+            }
+        }
+
+        browser {
+            webpackTask {
+                this.sourceMaps
+            }
+        }
     }
 }
 
@@ -25,18 +42,8 @@ kotlin.sourceSets["jsMain"].dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.3.3")
 }
 
-//tasks {
-//
-//    compileKotlinJs {
-//        kotlinOptions {
-//            sourceMap = true
-//            sourceMapEmbedSources = "always"
-//            sourceMapPrefix = "../../"
-//            moduleKind = "umd"
-//            verbose = true
-//            metaInfo = false
-//        }
-//    }
+tasks {
+
 //
 //    val unpackLibraries by creating {
 //        group = "build"
@@ -61,22 +68,24 @@ kotlin.sourceSets["jsMain"].dependencies {
 //        }
 //    }
 //
-//    val assembleWeb by creating(Copy::class) {
-//        group = "build"
-//        description = "Assemble the web application"
-//        includeEmptyDirs = false
-//        from(unpackLibraries)
-//        from(compileKotlinJs.get().outputFile.parent)
-//        from(processResources.get().destinationDir)
-//        exclude("**/*.kotlin_metadata")
-//        exclude("**/*.meta.js")
-//        exclude("META-INF/**")
-//        exclude("**/*.kjsm")
-//        into("$buildDir/web")
-//    }
-//
-//    assemble {
-//        dependsOn(assembleWeb)
-//    }
-//}
+    val assembleWeb by creating(Copy::class) {
+        val resources = project.tasks["jsProcessResources"] as Copy
+        val webpack = project.tasks["jsBrowserWebpack"] as KotlinWebpack
+        dependsOn (resources, webpack)
+        group = "build"
+        description = "Assemble the web application"
+        includeEmptyDirs = false
+        from(resources.destinationDir)
+        from(webpack.destinationDirectory)
+        exclude("**/*.kotlin_metadata")
+        exclude("**/*.meta.js")
+        exclude("META-INF/**")
+        exclude("**/*.kjsm")
+        into("$buildDir/web")
+    }
+
+    assemble {
+        dependsOn(assembleWeb)
+    }
+}
 
