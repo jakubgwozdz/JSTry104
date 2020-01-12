@@ -37,14 +37,14 @@
 
 #game-output {
     overflow: auto;
-    height: 27em;
+    height: 40em;
     resize: vertical;
     white-space: pre-wrap;
 }
 
 #shipscan-state {
     overflow: auto;
-    height: 26em;
+    height: 40em;
     resize: vertical;
 }
 

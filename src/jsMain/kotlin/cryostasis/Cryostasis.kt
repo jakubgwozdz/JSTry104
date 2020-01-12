@@ -15,14 +15,6 @@ import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.events.Event
 import kotlin.browser.document
 
-@FlowPreview
-fun load() {
-    val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
-    placeholder.remove()
-    view // just to make sure it's lazily loaded
-//    println(view.programTextArea.textContent)
-}
-
 var decompiledProgram: String = ""
 
 fun disassembly(e: Event) {
@@ -98,7 +90,8 @@ fun runIntcode(e: Event) {
             .collect()
     }
 
-    intcodeProcess = IntcodeProcess(computer, inChannel, outChannel, job, state)
+    intcodeProcess =
+        IntcodeProcess(computer, inChannel, outChannel, job, state)
 
 }
 

@@ -1,6 +1,5 @@
 package cryostasis
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.js.div
@@ -8,6 +7,13 @@ import kotlinx.html.js.onChangeFunction
 import kotlinx.html.js.onClickFunction
 import org.w3c.dom.*
 import kotlin.browser.document
+
+fun cryostasisInit() {
+    val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
+    placeholder.remove()
+    view // just to make sure it's lazily loaded
+//    println(view.programTextArea.textContent)
+}
 
 class CryostasisView(
     val programTextArea: HTMLTextAreaElement,
@@ -56,7 +62,7 @@ val view by lazy {
 // build DOM using kontlinx.html fluent builders
 
 val container by lazy {
-    document.body!!.append.div("container text-monospace") {
+    document.body!!.append.div("container-fluid text-monospace  d-flex flex-column") {
         h1 { +"Cryostasis" }
         p {
             +"Download your puzzle input from "
@@ -98,8 +104,8 @@ val container by lazy {
 
         p { }
 
-        div("row") {
-            div("col-4 pr-0") {
+        div("row flex-grow-1") {
+            div("col-4 pr-0 flex-grow-1") {
                 div {
                     button(type = ButtonType.button, classes = "btn btn-primary btn-block") {
                         +"Run"
@@ -111,7 +117,7 @@ val container by lazy {
                         h5("card-title") {
                             +"Intcode state"
                         }
-                        pre("card-text") {
+                        pre("card-text flex-grow-1") {
                             +"...."
                             id = "intcode-state"
                         }
@@ -131,7 +137,7 @@ val container by lazy {
             }
             div("col-8") {
                 div("card card-body") {
-                    pre("border border-info rounded p-2") {
+                    pre("border border-info rounded p-2 d-flex flex-column") {
                         +"...."
                         id = "game-output"
                     }
@@ -175,11 +181,15 @@ val container by lazy {
 
 fun formatState(state: SearchState) = buildString {
     state.knownRooms.forEach { (roomId, room) ->
-        append(if (roomId == state.currentRoomId) "*" else "-")
-        append(" $roomId ${state.knownDirectionsToPlaces[roomId]?.map { it.second }}\n")
+        val isCurrent = roomId == state.currentRoomId
+        val directions = state.knownDirectionsToPlaces[roomId]?.map { it.second }
+        val itemsCount = if (room.items.isNotEmpty()) "- ${room.items.size} item(s): ${room.items}" else ""
+
+        append(if (isCurrent) "*" else "-")
+        append(" $directions $roomId $itemsCount\n")
+
         val knownExits = state.knownExits[roomId] ?: mutableMapOf()
         room.doors.forEach {
-            val itemsCount = if (state.inventory.isNotEmpty()) "- ${state.inventory.size} items -" else "-"
             append(
                 " `- $it $itemsCount ${knownExits[it] ?: "???"}\n"
             )

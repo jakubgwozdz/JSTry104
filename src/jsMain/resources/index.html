@@ -9,22 +9,27 @@
           integrity="sha384-rCA2D+D9QXuP2TomtQwd+uP50EHjpafN+wruul0sXZzX/Da7Txn4tB9aLMZV4DZm" crossorigin="anonymous">
 </head>
 
-<body onload="JSTry104.try104.load()">
-<script type="text/javascript" src="kotlin.js"></script>
-<script type="text/javascript" src="kotlinx-coroutines-core.js"></script>
-<script type="text/javascript" src="kotlinx-html-js.js"></script>
-<script type="text/javascript" src="JSTry104.js"></script>
+<body onload="jstry104.indexInit()">
 <div class="container">
     <p></p>
     <div id="testDiv" class="row">
         <input class="col-3 form-control" id="in" type="text" value="test data"/>
-        <input class="col-2 form-control" id="btn" type="button" value="split with kotlin" onclick="JSTry104.try104.click()">
+        <input class="col-2 form-control" id="btn" type="button" value="split with kotlin" onclick="clicked()">
         <input class="col-7 form-control" id="out" type="text"/>
     </div>
     <p></p>
     <div id="coroutinesDiv">
         <p id="placeholder">If everything goes ok, this be replaced by some generated content</p>
     </div>
+    <p></p>
+    <p><a href="cryostasis.html">Advent of Code 2019 - Cryostasis Game</a></p>
+    <script type="text/javascript" src="JSTry104.js"></script>
+    <script type="text/javascript">
+            function clicked() {
+          jstry104.indexClick()
+        }
+
+    </script>
 </div>
 </body>
 </html>
