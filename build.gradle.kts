@@ -6,16 +6,16 @@ plugins {
 
 kotlin {
     js {
-        val main by compilations.getting {
-            kotlinOptions {
-                sourceMap = true
-                sourceMapEmbedSources = "always"
-                sourceMapPrefix = "../../"
-                moduleKind = "umd"
-                verbose = true
-                metaInfo = false
-            }
-        }
+//        val main by compilations.getting {
+//            kotlinOptions {
+//                sourceMap = true
+//                sourceMapEmbedSources = "always"
+//                sourceMapPrefix = "../../"
+//                moduleKind = "umd"
+//                verbose = true
+//                metaInfo = false
+//            }
+//        }
 
         browser {
             webpackTask {
