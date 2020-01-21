@@ -35,7 +35,7 @@ fun load() {
                     id = "box-$increment-$it"
                     classes = setOf("coroutines-text", "increment-$increment")
                 }.also {
-                    it.style.opacity = "1%"
+                    it.style.opacity = "0.01"
                 }
             }
         TryNo104CoroutineScope(inputs, increment).start()
@@ -66,7 +66,7 @@ class TryNo104CoroutineScope(val inputs: List<HTMLElement>, val increment: Int) 
             val times = 20 + 7 * increment
             while (true) {
                 repeat(times) {
-                    inputs[i % inputs.size].style.opacity = "${100-(100*it)/times}%"
+                    inputs[i % inputs.size].style.opacity = "${1.0-(1.0*it)/times}"
                     delay(16L)
                 }
                 i += 6

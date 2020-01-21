@@ -2,20 +2,25 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpack
 
 plugins {
     kotlin("multiplatform") version "1.3.61"
+//    kotlin("kotlin-dce-js") version "1.3.61"
+//    id("kotlin-dce-js") version "1.3.61"
 }
 
 kotlin {
     js {
-//        val main by compilations.getting {
-//            kotlinOptions {
+        val main by compilations.getting {
+            kotlinOptions {
 //                sourceMap = true
 //                sourceMapEmbedSources = "always"
 //                sourceMapPrefix = "../../"
 //                moduleKind = "umd"
 //                verbose = true
 //                metaInfo = false
-//            }
-//        }
+                freeCompilerArgs = freeCompilerArgs +
+                        "-Xuse-experimental=kotlinx.coroutines.FlowPreview" +
+                        "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi"
+            }
+        }
 
         browser {
             webpackTask {
@@ -44,33 +49,11 @@ kotlin.sourceSets["jsMain"].dependencies {
 
 tasks {
 
-//
-//    val unpackLibraries by creating {
-//        group = "build"
-//        description = "Unpack the libraries"
-//        val outputDir = file("$buildDir/$name")
-//        val compileClasspath = configurations["compileClasspath"]
-//        inputs.property("compileClasspath", compileClasspath)
-//        outputs.dir(outputDir)
-//        doLast {
-//            compileClasspath.forEach {
-//                it.name.matches(Regex("kotlin-stdlib-js-.+\\.jar"))
-//                copy {
-//                    includeEmptyDirs = false
-//                    from(zipTree(it))
-//                    into(outputDir)
-//                    exclude("**/*.kotlin_metadata")
-//                    exclude("**/*.meta.js")
-//                    exclude("META-INF/**")
-//                    exclude("**/*.kjsm")
-//                }
-//            }
-//        }
-//    }
-//
+//    getByName("",)
+
     val assembleWeb by creating(Copy::class) {
-        val resources = project.tasks["jsProcessResources"] as Copy
-        val webpack = project.tasks["jsBrowserWebpack"] as KotlinWebpack
+        val resources = getByName("jsProcessResources", Copy::class)
+        val webpack = getByName("jsBrowserWebpack", KotlinWebpack::class)
         dependsOn (resources, webpack)
         group = "build"
         description = "Assemble the web application"

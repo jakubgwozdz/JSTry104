@@ -1,6 +1,6 @@
 package try104
 
-import cryostasis.cryostasisInit
+import cryostasis.browser.cryostasisInit
 import kotlin.browser.document
 import kotlin.browser.window
 

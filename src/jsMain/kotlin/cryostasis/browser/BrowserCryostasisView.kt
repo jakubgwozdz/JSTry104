@@ -1,44 +1,123 @@
-package cryostasis
+package cryostasis.browser
 
+import cryostasis.*
+import intcode.Intcode
+import intcode.disassemblyProgram
+import intcode.dissassembly
+import intcode.parseIntcode
 import kotlinx.html.*
-import kotlinx.html.dom.append
+import kotlinx.html.dom.create
 import kotlinx.html.js.div
 import kotlinx.html.js.onChangeFunction
 import kotlinx.html.js.onClickFunction
 import org.w3c.dom.*
+import org.w3c.dom.events.Event
 import kotlin.browser.document
 
 fun cryostasisInit() {
     val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
+    val parent = placeholder.parentElement
     placeholder.remove()
-    view // just to make sure it's lazily loaded
+    parent!!.append(container)
 //    println(view.programTextArea.textContent)
 }
 
-class CryostasisView(
-    val programTextArea: HTMLTextAreaElement,
-    val disassemblyPre: HTMLPreElement,
-    val intcodeStatePre: HTMLPreElement,
-    val gameOutputPre: HTMLPreElement,
-    val gameInputInput: HTMLInputElement,
-    val shipScanStatePre: HTMLPreElement,
-    val autoScanButton: HTMLButtonElement
-) {
-    fun reset() {
+class BrowserCryostasisView(
+    private val programTextArea: HTMLTextAreaElement,
+    private val disassemblyPre: HTMLPreElement,
+    private val intcodeStatePre: HTMLPreElement,
+    private val gameOutputPre: HTMLPreElement,
+    private val gameInputInput: HTMLInputElement,
+    private val shipScanStatePre: HTMLPreElement,
+    private val autoScanButton: HTMLButtonElement
+): CryostasisView {
+
+    override fun reset() {
+        autoscanOff()
         intcodeStatePre.textContent = "...."
         shipScanStatePre.textContent = "...."
         gameOutputPre.textContent = "...."
     }
 
-    fun println(line: String) {
+    override fun println(line: String) {
         gameOutputPre.textContent += line + "\n"
         gameOutputPre.scrollTop = gameOutputPre.scrollHeight.toDouble()
-
     }
 
-    fun displayState(state: SearchState) {
+    override fun displayState(state: SearchState) {
         shipScanStatePre.textContent = formatState(state)
     }
+
+    override fun debugger(computer: Intcode) {
+        intcodeStatePre.textContent = """
+        |ip: ${computer.ip.toString().padEnd(6)} rb: ${computer.rb}
+        |${dissassembly(computer.memory, computer.ip)}
+    """.trimMargin()
+    }
+
+    override fun readCommand(): String {
+        val command = gameInputInput.value.trim()
+            .let { if (it.isNotBlank()) it[0].toLowerCase() + it.substring(1) else it }
+        gameInputInput.value = ""
+        return command
+    }
+
+    override fun getProgram(): String = programTextArea.value
+
+    override fun checkInput() {
+        if (autoscan) {
+            nextAutomaticCommand()
+                ?.let { sendCommand(it) }
+                ?: autoscanOff()
+        } else {
+            view.gameInputInput.focus()
+        }
+    }
+
+    private fun formatState(state: SearchState) = buildString {
+        state.knownRooms.forEach { (roomId, room) ->
+            val isCurrent = roomId == state.currentRoomId
+            val directions = state.knownDirectionsToPlaces[roomId]?.map { it.second }
+            val itemsCount = if (room.items.isNotEmpty()) "- ${room.items.size} item(s): ${room.items}" else ""
+
+            append(if (isCurrent) "*" else "-")
+            append(" $directions $roomId $itemsCount\n")
+
+            val knownExits = state.knownExits[roomId] ?: mutableMapOf()
+            room.doors.forEach {
+                append(
+                    " `- $it ${knownExits[it] ?: "???"}\n"
+                )
+            }
+        }
+    }
+
+    fun disassembly() {
+        val program = getProgram()
+        if (program != decompiledProgram) {
+            val memory = parseIntcode(program)
+            val length = "; Program length in chars: ${program.length}"
+            val size = "; Program length in memory: ${memory.size}"
+            val disassembly = disassemblyProgram(program)
+            disassemblyPre.innerText = (sequenceOf(length, size) + disassembly).joinToString("\n")
+        }
+        decompiledProgram = program
+    }
+
+    var decompiledProgram: String = ""
+
+    var autoscan = false
+
+    fun autoscanOn() {
+        autoscan = true
+        checkInput()
+    }
+
+    fun autoscanOff() {
+        autoscan = false
+        autoScanButton.classList.remove("active")
+    }
+
 }
 
 val view by lazy {
@@ -47,7 +126,7 @@ val view by lazy {
         getElementById(elementId) as K
 
     with(container.ownerDocument!!) {
-        CryostasisView(
+        BrowserCryostasisView(
             byId("program-input"),
             byId("disassembly-output"),
             byId("intcode-state"),
@@ -62,8 +141,8 @@ val view by lazy {
 // build DOM using kontlinx.html fluent builders
 
 val container by lazy {
-    document.body!!.append.div("container-fluid text-monospace  d-flex flex-column") {
-        h1 { +"Cryostasis" }
+    document.create.div("container-fluid text-monospace  d-flex flex-column") {
+        h1 { +"Cryostasis v0.9" }
         p {
             +"Download your puzzle input from "
             a("https://adventofcode.com/2019/day/25") { +"Advent of Code 2019 day 25" }
@@ -154,7 +233,7 @@ val container by lazy {
                                 +"Scan for me instead"
                                 attributes["data-toggle"] = "buttons"
                                 id = "auto-scan"
-                                onClickFunction = ::autoscanOn
+                                onClickFunction = ::autoScan
                             }
                         }
                     }
@@ -179,20 +258,21 @@ val container by lazy {
     }
 }
 
-fun formatState(state: SearchState) = buildString {
-    state.knownRooms.forEach { (roomId, room) ->
-        val isCurrent = roomId == state.currentRoomId
-        val directions = state.knownDirectionsToPlaces[roomId]?.map { it.second }
-        val itemsCount = if (room.items.isNotEmpty()) "- ${room.items.size} item(s): ${room.items}" else ""
+fun disassembly(e: Event) {
+    view.disassembly()
+}
 
-        append(if (isCurrent) "*" else "-")
-        append(" $directions $roomId $itemsCount\n")
+fun runIntcode(e: Event) {
+    val program = view.getProgram()
+    runIntcode(program, view)
+    (e.currentTarget as HTMLElement?)?.innerText = "Restart"
+}
 
-        val knownExits = state.knownExits[roomId] ?: mutableMapOf()
-        room.doors.forEach {
-            append(
-                " `- $it $itemsCount ${knownExits[it] ?: "???"}\n"
-            )
-        }
-    }
+fun commandEntered(e: Event?) {
+    val command = view.readCommand()
+    sendCommand(command)
+}
+
+fun autoScan(e: Event?) {
+    view.autoscanOn()
 }
