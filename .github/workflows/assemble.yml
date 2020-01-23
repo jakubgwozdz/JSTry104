@@ -31,6 +31,8 @@ jobs:
         key: ${{ runner.os }}-js-${{ hashFiles('**/*.gradle.kts') }}
         restore-keys: |
           ${{ runner.os }}-js-
+    - name: gradlew preconditions (temporary fix for the eap dependency problem)
+      run: ./gradlew :jsProcessResources
     - name: gradlew build
       run: ./gradlew build
     - name: Deploy
@@ -38,6 +40,6 @@ jobs:
       uses: crazy-max/ghaction-github-pages@v1
       with:
         target_branch: gh-pages
-        build_dir: build/distribution
+        build_dir: build/distributions
       env:
         GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
