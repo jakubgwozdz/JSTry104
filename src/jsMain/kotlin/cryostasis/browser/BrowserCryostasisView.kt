@@ -5,14 +5,40 @@ import intcode.Intcode
 import intcode.disassemblyProgram
 import intcode.dissassembly
 import intcode.parseIntcode
-import kotlinx.html.*
+import kotlinx.html.ButtonType
+import kotlinx.html.InputType
+import kotlinx.html.a
+import kotlinx.html.br
+import kotlinx.html.button
+import kotlinx.html.div
 import kotlinx.html.dom.create
+import kotlinx.html.h1
+import kotlinx.html.h5
+import kotlinx.html.id
+import kotlinx.html.input
 import kotlinx.html.js.div
 import kotlinx.html.js.onChangeFunction
 import kotlinx.html.js.onClickFunction
-import org.w3c.dom.*
+import kotlinx.html.p
+import kotlinx.html.pre
+import kotlinx.html.span
+import kotlinx.html.textArea
+import org.w3c.dom.Document
+import org.w3c.dom.HTMLButtonElement
+import org.w3c.dom.HTMLElement
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLParagraphElement
+import org.w3c.dom.HTMLPreElement
+import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
 import kotlin.browser.document
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.forEach
+import kotlin.collections.isNotEmpty
+import kotlin.collections.map
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 
 fun cryostasisInit() {
     val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
@@ -30,7 +56,7 @@ class BrowserCryostasisView(
     private val gameInputInput: HTMLInputElement,
     private val shipScanStatePre: HTMLPreElement,
     private val autoScanButton: HTMLButtonElement
-): CryostasisView {
+) : CryostasisView {
 
     override fun reset() {
         autoscanOff()
@@ -117,7 +143,6 @@ class BrowserCryostasisView(
         autoscan = false
         autoScanButton.classList.remove("active")
     }
-
 }
 
 val view by lazy {

@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
     <title>Try no 104</title>
-    <link rel="stylesheet" type="text/css" href="style.css"/>
-    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/darkly/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-rCA2D+D9QXuP2TomtQwd+uP50EHjpafN+wruul0sXZzX/Da7Txn4tB9aLMZV4DZm" crossorigin="anonymous">
+    <link href="style.css" rel="stylesheet" type="text/css"/>
+    <link crossorigin="anonymous" href="https://stackpath.bootstrapcdn.com/bootswatch/4.4.1/darkly/bootstrap.min.css"
+          integrity="sha384-rCA2D+D9QXuP2TomtQwd+uP50EHjpafN+wruul0sXZzX/Da7Txn4tB9aLMZV4DZm" rel="stylesheet">
 </head>
 
 <body onload="jstry104.indexInit()">
 <div class="container">
     <p></p>
-    <div id="testDiv" class="row">
+    <div class="row" id="testDiv">
         <input class="col-3 form-control" id="in" type="text" value="test data"/>
-        <input class="col-2 form-control" id="btn" type="button" value="split with kotlin" onclick="clicked()">
+        <input class="col-2 form-control" id="btn" onclick="clicked()" type="button" value="split with kotlin">
         <input class="col-7 form-control" id="out" type="text"/>
     </div>
     <p></p>
@@ -23,11 +23,12 @@
     </div>
     <p></p>
     <p><a href="cryostasis.html">Advent of Code 2019 - Cryostasis Game</a></p>
-    <script type="text/javascript" src="JSTry104.js"></script>
+    <script src="JSTry104.js" type="text/javascript"></script>
     <script type="text/javascript">
             function clicked() {
           jstry104.indexClick()
         }
+
 
     </script>
 </div>

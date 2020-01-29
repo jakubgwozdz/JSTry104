@@ -10,7 +10,7 @@ fun main() {
     println("uri: ${document.documentURI}")
     println(document)
 
-    val w : dynamic = window
+    val w: dynamic = window
     w.jstry104 = Any()
     w.jstry104.cryostasisInit = ::cryostasisInit
     w.jstry104.indexInit = ::load

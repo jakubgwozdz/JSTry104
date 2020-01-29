@@ -1,9 +1,11 @@
 package intcode
 
-
-import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 interface InBuffer<T> {
     suspend fun receive(): T
@@ -28,7 +30,6 @@ class ChannelOutBuffer(val id: Any, val channel: SendChannel<Long>, val logIO: B
     }
 
     override fun close() = channel.close()
-
 }
 
 class Intcode(
@@ -36,14 +37,14 @@ class Intcode(
     val inBuffer: InBuffer<Long>,
     val outBuffer: OutBuffer,
     val id: Any = "Intcode",
-    val debug: (Intcode)->Unit = {}
+    val debug: (Intcode) -> Unit = {}
 ) {
     constructor(
         memory: Memory,
         receiveChannel: ReceiveChannel<Long>,
         sendChannel: SendChannel<Long>,
         id: Any = "Intcode",
-        debug: (Intcode)->Unit = {}
+        debug: (Intcode) -> Unit = {}
     ) : this(memory, ChannelInBuffer(id, receiveChannel), ChannelOutBuffer(id, sendChannel), id, debug)
 
     var ip: Long = 0 // instruction pointer
@@ -160,5 +161,4 @@ class Intcode(
         rb += memory[firstAddr]
         ip += 2
     }
-
 }

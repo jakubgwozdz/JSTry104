@@ -40,7 +40,6 @@ fun load() {
             }
         TryNo104CoroutineScope(inputs, increment).start()
     }
-
 }
 
 val input by lazy { document.getElementById("in")!! as HTMLInputElement }
@@ -55,7 +54,6 @@ class TryNo104 {
     fun click() {
         output.value = input.value.map { "$it" }.joinToString(test(), "<", ">")
     }
-
 }
 
 class TryNo104CoroutineScope(val inputs: List<HTMLElement>, val increment: Int) : CoroutineScope {
@@ -66,7 +64,7 @@ class TryNo104CoroutineScope(val inputs: List<HTMLElement>, val increment: Int) 
             val times = 20 + 7 * increment
             while (true) {
                 repeat(times) {
-                    inputs[i % inputs.size].style.opacity = "${1.0-(1.0*it)/times}"
+                    inputs[i % inputs.size].style.opacity = "${1.0 - (1.0 * it) / times}"
                     delay(17L)
                 }
                 i += 6

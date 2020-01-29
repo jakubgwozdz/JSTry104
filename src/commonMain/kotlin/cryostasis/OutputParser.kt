@@ -22,7 +22,6 @@ val roomNameRegex = Regex("== (.+) ==")
 val takeRegex = Regex("You take the (.+)\\.")
 val dropRegex = Regex("You drop the (.+)\\.")
 
-
 class OutputParser {
 
     enum class State { START, BUILDING_ROOM, AFTER_TELEPORT, AFTER_TAKE, LISTING_INVENTORY, SUCCESS }
@@ -98,9 +97,7 @@ class OutputParser {
         State.SUCCESS -> builtOutputs.toList().also { clear() }
         State.AFTER_TELEPORT -> error("Unexpected end of output in state $state")
     }
-
 }
-
 
 @Suppress("BlockingMethodInNonBlockingContext")
 fun Flow<String>.outputs(): Flow<Output> =

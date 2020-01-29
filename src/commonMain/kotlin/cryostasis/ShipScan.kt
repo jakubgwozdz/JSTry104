@@ -47,7 +47,6 @@ data class SearchState(
     var result: String? = null
 )
 
-
 class SearchUpdater {
 
     fun update(state: SearchState, output: Output) = when (output) {
@@ -125,5 +124,4 @@ class ShipScan {
             .firstOrNull { it !in state.knownExits[state.currentRoomId]?.keys ?: emptyList<Direction>() }
             ?.text
     }
-
 }

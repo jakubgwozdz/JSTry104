@@ -7,7 +7,11 @@ import intcode.writeln
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 interface CryostasisView {
@@ -54,7 +58,7 @@ fun runIntcode(program: String, view: CryostasisView) {
                 println("Intcode finished")
             } catch (e: Exception) {
                 println(e)
-                throw e;
+                throw e
             } finally {
                 inChannel.close()
                 outChannel.close()
@@ -81,7 +85,6 @@ fun runIntcode(program: String, view: CryostasisView) {
 
     intcodeProcess =
         IntcodeProcess(computer, inChannel, outChannel, job, state)
-
 }
 
 fun nextAutomaticCommand(): String? = intcodeProcess?.searchState?.let {
