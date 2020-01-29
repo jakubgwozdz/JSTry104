@@ -67,7 +67,7 @@ class TryNo104CoroutineScope(val inputs: List<HTMLElement>, val increment: Int) 
             while (true) {
                 repeat(times) {
                     inputs[i % inputs.size].style.opacity = "${1.0-(1.0*it)/times}"
-                    delay(16L)
+                    delay(17L)
                 }
                 i += 6
             }

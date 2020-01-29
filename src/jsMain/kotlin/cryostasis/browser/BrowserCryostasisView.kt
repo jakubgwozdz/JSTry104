@@ -247,7 +247,7 @@ val container by lazy {
                         br {}
                         +"- take <name of item>      ; take an item"
                         br {}
-                        +"- drop <name of item>      ; leave an item"
+                        +"- drop <name of item>      ; drop an item"
                         br {}
                         +"- inv                      ; display inventory"
                     }

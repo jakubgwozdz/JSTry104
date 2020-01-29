@@ -90,8 +90,6 @@ class Intcode(
     suspend fun run() {
         while (true) {
             debug(this)
-//            if (debug)
-//                println("${ip.toString().padStart(6)}: ${dissassembly(memory, ip)}")
             when (opcode(operation)) {
                 1L -> opADD()
                 2L -> opMUL()
@@ -164,9 +162,3 @@ class Intcode(
     }
 
 }
-
-//operator fun Long.plus(n: Int): Long = this + n.toLong()
-//
-//operator fun Long.div(i: Int): Long = this / i.toLong()
-//
-//operator fun Long.rem(i: Int): Int = (this % i.toLong()).toInt()

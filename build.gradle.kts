@@ -2,24 +2,6 @@ plugins {
     kotlin("multiplatform") version "1.3.70-eap-42"
 }
 
-kotlin {
-    js {
-        val main by compilations.getting {
-            kotlinOptions {
-                freeCompilerArgs = freeCompilerArgs +
-                        "-Xuse-experimental=kotlinx.coroutines.FlowPreview" +
-                        "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi"
-            }
-        }
-
-        browser {
-            webpackTask {
-                this.sourceMaps
-            }
-        }
-    }
-}
-
 repositories {
     jcenter()
     mavenCentral()
@@ -33,14 +15,53 @@ val versions by extra {
     )
 }
 
-kotlin.sourceSets["commonMain"].dependencies {
-    implementation(kotlin("stdlib-common"))
-    implementation("org.jetbrains.kotlinx:kotlinx-html-common:${versions["html"]}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${versions["coroutines"]}")
-}
+kotlin {
+    js {
+        val main by compilations.getting {
+            kotlinOptions {
+                freeCompilerArgs = freeCompilerArgs +
+                        "-Xuse-experimental=kotlinx.coroutines.FlowPreview" +
+                        "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi"
+            }
+        }
 
-kotlin.sourceSets["jsMain"].dependencies {
-    implementation(kotlin("stdlib-js"))
-    implementation("org.jetbrains.kotlinx:kotlinx-html-js:${versions["html"]}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${versions["coroutines"]}")
+        browser {
+            webpackTask {
+                this.sourceMaps = true
+            }
+        }
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-html-common:${versions["html"]}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${versions["coroutines"]}")
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
+                implementation("org.jetbrains.kotlinx:kotlinx-html-js:${versions["html"]}")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${versions["coroutines"]}")
+            }
+        }
+
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
+            }
+        }
+
+
+    }
+
 }
