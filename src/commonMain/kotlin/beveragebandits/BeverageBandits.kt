@@ -1,78 +1,10 @@
 package beveragebandits
 
+import pathfinder.BFSPathfinder
 import pathfinder.BasicPathfinder
-
-enum class Direction { N, W, E, S }
-
-data class Position(val y: Int, val x: Int) : Comparable<Position> {
-    override fun compareTo(other: Position): Int =
-        compareValuesBy(this, other, Position::y, Position::x)
-
-    operator fun plus(direction: Direction): Position = when (direction) {
-        Direction.N -> y - 1 by x
-        Direction.W -> y by x - 1
-        Direction.E -> y by x + 1
-        Direction.S -> y + 1 by x
-    }
-
-    override fun toString(): String = "($y,$x)"
-
-}
-
-infix fun Int.by(x: Int): Position = Position(this, x)
-
-data class Cavern(internal val map: List<String>) {
-    constructor(input: String) : this(input.lines())
-
-    override fun toString(): String = map.joinToString("\n")
-
-    fun canGoTo(position: Position) = this[position] == '.'
-
-    operator fun get(position: Position) =
-        when {
-            position.y !in (map.indices) -> null
-            position.x !in (map[position.y].indices) -> null
-            else -> map[position.y][position.x]
-        }
-
-}
-
-fun Array<String>.with(position: Position, char: Char) = this.apply {
-    this[position.y] = this[position.y].toCharArray()
-        .apply { this[position.x] = char }
-        .concatToString()
-}
-
-
-fun Cavern.killUnit(position: Position): Cavern {
-    check(this[position] in MobType.chars) { "no mob at $position" }
-    return Cavern(
-        map.toTypedArray()
-            .with(position, '.')
-            .asList()
-    )
-}
-
-fun Cavern.mobMove(from: Position, to: Position): Cavern {
-    val mobChar = this[from]
-    check(mobChar in MobType.chars) { "no mob at $from" }
-    check(this[to] == '.') { "not empty at $to" }
-    return Cavern(
-        map.toTypedArray()
-            .with(from, '.')
-            .with(to, mobChar!!)
-            .asList()
-    )
-}
-
-fun Cavern.mobMove(from: Position, direction: Direction) = this.mobMove(from, from + direction)
-
-fun Cavern.actionOrder() = map.indices
-    .flatMap { y ->
-        map[y].indices
-            .filter { x -> map[y][x] in MobType.chars }
-            .map { x -> y by x to MobType.of(map[y][x]) }
-    }
+import pathfinder.Cache
+import utils.replace
+import utils.without
 
 enum class MobType(val char: Char) {
     Elf('E'), Goblin('G');
@@ -90,7 +22,9 @@ data class FightState(
     val elves: List<Mob>, val goblins: List<Mob>,
     val turnsCompleted: Int,
     val mobsToGo: List<Mob>
-)
+) {
+    override fun toString(): String = "After $turnsCompleted rounds: \n$cavern"
+}
 
 fun newFight(cavern: Cavern): FightState {
     val order = cavern.actionOrder().map { Mob(it.first, it.second) }
@@ -116,10 +50,15 @@ fun FightState.fullRound(): FightState {
 }
 
 fun FightState.mobTurn(mob: Mob): FightState {
-    return this
-        .run { if (mob.canAttack(cavern).isEmpty()) mobMove(mob) else this }
-        .run { if (mob.canAttack(cavern).isNotEmpty()) mobAttack(mob) else this }
-        .copy(mobsToGo = mobsToGo.drop(1))
+    val initial = this
+    val (afterMove, mobAfterMove) = if (mob.canAttack(initial.cavern).isEmpty()) initial.mobMove(mob) else initial to mob
+    val afterAttack = if (mobAfterMove.canAttack(afterMove.cavern).isNotEmpty()) afterMove.mobAttack(mobAfterMove) else afterMove
+
+    return afterAttack.copy(mobsToGo = mobsToGo.drop(1))
+}
+
+data class MovePriority(val distance: Int, val position: Position) : Comparable<MovePriority> {
+    override fun compareTo(other: MovePriority): Int = compareValuesBy(this, other, { it.distance }, { it.position })
 }
 
 fun FightState.chooseDestination(mob: Mob): Position? {
@@ -134,21 +73,26 @@ fun FightState.chooseDestination(mob: Mob): Position? {
         .flatMap { e -> Direction.values().map { e.position + it } } // adjacent places
         .filter { cavern.canGoTo(it) } // that are empty
 
-//    if (inRange.isEmpty()) return null
+    if (inRange.isEmpty()) return null
 
-    val reachable = BasicPathfinder<Position>(
-        waysOutOp = { list ->
-            Direction.values().map { list.last() + it }
+    val cache = Cache<Position, MovePriority>()
+
+    val reachable = BFSPathfinder<Position, List<Position>, MovePriority>(
+        // logWithTime = { println(it()) },
+        waysOutOp = { l ->
+            Direction.values().map { l.last() + it }
                 .filter { cavern.canGoTo(it) }
-                .filter { it !in list }
+                .filter { it !in l }
         },
-        distanceOp = { list -> list.size * 10000 + list.last().y * 100 + list.last().x }
+        distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else l.single()) },
+        adderOp = { l, t -> l + t },
+        meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
     ).findShortest(listOf(mob.position)) { list -> list.last() in inRange }
 
     return reachable?.last()
 }
 
-fun FightState.mobMove(mob: Mob): FightState {
+fun FightState.mobMove(mob: Mob): Pair<FightState, Mob> {
     val destination = chooseDestination(mob)
 
     return if (destination != null) {
@@ -165,19 +109,38 @@ fun FightState.mobMove(mob: Mob): FightState {
             elves = elves.replace(mob, newMobState),
             goblins = goblins.replace(mob, newMobState),
             mobsToGo = mobsToGo.replace(mob, newMobState)
-        )
+        ) to newMobState
     } else {
-        this
+        this to mob
     }
 }
 
-private fun <E> List<E>.replace(prev: E, now: E): List<E> {
-    val i = this.indexOf(prev)
-    return if (i < 0) this
-    else this.subList(0, i) + now + this.subList(i + 1, this.size)
+data class AttackPriority(val hp: Int, val position: Position) : Comparable<AttackPriority> {
+    override fun compareTo(other: AttackPriority): Int = compareValuesBy(this, other, { it.hp }, { it.position })
 }
 
 fun FightState.mobAttack(mob: Mob): FightState {
-    // TODO()
-    return this
+    val enemy = when (mob.type) {
+        MobType.Elf -> goblins
+        MobType.Goblin -> elves
+    }
+        .filter { it.position.isAdjacentTo(mob.position) }
+        .minBy { AttackPriority(it.hp, it.position) }!!
+    val newEnemyState = enemy.copy(hp = enemy.hp - 3)
+
+    return if (newEnemyState.hp > 0) {
+        this.copy(
+            elves = elves.replace(enemy, newEnemyState),
+            goblins = goblins.replace(enemy, newEnemyState),
+            mobsToGo = mobsToGo.replace(enemy, newEnemyState)
+        )
+    } else {
+        this.copy(
+            cavern = cavern.killUnit(enemy.position),
+            elves = elves.without(enemy),
+            goblins = goblins.without(enemy),
+            mobsToGo = mobsToGo.without(enemy)
+        )
+    }
 }
+

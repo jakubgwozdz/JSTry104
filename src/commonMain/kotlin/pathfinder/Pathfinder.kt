@@ -1,5 +1,7 @@
 package pathfinder
 
+import utils.PriorityQueue
+
 /**
  * T - location
  * D - exits
@@ -10,7 +12,7 @@ interface Pathfinder<T : Any, R : Any> {
 }
 
 open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
-    val logWithTime: (() -> Any) -> Unit = {},
+    val loggingOp: (() -> Any) -> Unit = {},
     val loggingFound: Boolean = false,
     val adderOp: (R, T) -> R,
     val distanceOp: ((R) -> I),
@@ -27,7 +29,7 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
         while (toVisit.isNotEmpty()) {
             val state = pick()
             waysOutOp(state)
-                .also { logWithTime { "WaysOut for $state: $it" } }
+                .also { loggingOp { "WaysOut for $state: $it" } }
                 .map { next -> adderOp(state, next) }
                 .forEach { r ->
                     if (endOp(r)) {
@@ -36,7 +38,6 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
                         add(r)
                     }
                 }
-
         }
 
         return currentBest?.first
@@ -45,15 +46,15 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
     private fun add(nextState: R) {
         val distance = distanceOp(nextState)
         if (!meaningfulOp(nextState, distance)) {
-            logWithTime { "skipping $nextState with distance $distance, it's not meaningful" }
+            loggingOp { "skipping $nextState with distance $distance, it's not meaningful" }
             return
         }
         val c = currentBest
         if (c == null || c.second > distance) {
             val new = nextState to distance
             toVisit.offer(new)
-            logWithTime { "adding $nextState with distance $distance" }
-        } else logWithTime { "skipping $nextState with distance $distance, we got better result already" }
+            loggingOp { "adding $nextState with distance $distance" }
+        } else loggingOp { "skipping $nextState with distance $distance, we got better result already" }
     }
 
     private fun done(nextState: R) {
@@ -61,8 +62,8 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
         val c = currentBest
         if (c == null || c.second > distance) {
             currentBest = nextState to distance
-            if (loggingFound) logWithTime { "FOUND $nextState with distance $distance" }
-        } else logWithTime { "skipping found $nextState with distance $distance, we got better result already" }
+            if (loggingFound) loggingOp { "FOUND $nextState with distance $distance" }
+        } else loggingOp { "skipping found $nextState with distance $distance, we got better result already" }
     }
 
     private fun pick(): R {
@@ -78,14 +79,29 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
 }
 
 class BasicPathfinder<T : Comparable<T>>(
-    logWithTime: (Any) -> Unit = {},
+    loggingOp: (Any) -> Unit = {},
     adderOp: (List<T>, T) -> List<T> = { l, t -> l + t },
     distanceOp: ((List<T>) -> Int) = { l -> l.size },
     waysOutOp: (List<T>) -> Iterable<T>
 ) : BFSPathfinder<T, List<T>, Int>(
-    logWithTime = logWithTime,
+    loggingOp = loggingOp,
     adderOp = adderOp,
     distanceOp = distanceOp,
     waysOutOp = { l -> waysOutOp(l).filter { it !in l } }
 )
 
+class Cache<R : Any, I : Comparable<I>> {
+    private val cache = mutableMapOf<R, I>()
+    fun isBetterThanPrevious(state: R, distance: I): Boolean {
+        val previous = cache[state]
+        return when {
+            previous != null && previous <= distance -> {
+                false
+            }
+            else -> {
+                cache[state] = distance
+                true
+            }
+        }
+    }
+}
