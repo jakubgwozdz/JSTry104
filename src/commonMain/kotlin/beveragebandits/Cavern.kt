@@ -73,3 +73,8 @@ fun Cavern.mobs() = map.indices
             .filter { x -> map[y][x] in MobType.chars }
             .map { x -> y by x to MobType.of(map[y][x]) }
     }
+
+fun Cavern.waysOut(l: List<Position>): List<Position> = Direction.values()
+    .map { l.last() + it }
+    .filter { emptyAt(it) }
+    .filter { it !in l }

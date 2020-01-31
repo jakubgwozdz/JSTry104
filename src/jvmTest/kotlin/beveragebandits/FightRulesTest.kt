@@ -137,4 +137,26 @@ class FightRulesTest {
                 .outcome
         }
     }
+
+    @Test
+    fun completeJG2() {
+        val input = beveragebandits.jakubgwozdz.cavernInput
+
+        expect(54096) {
+
+            var attackPower = 3
+            var phase:Phase
+
+            do {
+                attackPower++
+                val rules = FightRules(attackPower, {s->s.mobs.any { it.type==MobType.Elf && it.hp <= 0 }})
+                phase = rules.newFight(Cavern(input))
+                phase = rules.fightToEnd(phase)
+
+                println("AP $attackPower outcome ${phase.state.outcome}")
+            } while (phase !is ElvesWins)
+
+            phase.state.outcome
+        }
+    }
 }

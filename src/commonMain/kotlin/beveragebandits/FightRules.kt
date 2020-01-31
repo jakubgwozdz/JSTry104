@@ -2,10 +2,12 @@ package beveragebandits
 
 import beveragebandits.MobType.Elf
 import beveragebandits.MobType.Goblin
-import pathfinder.BFSPathfinder
-import pathfinder.Cache
+import pathfinder.BasicPathfinder
 
-class FightRules(val elvesAttackPower: Int = 3) {
+class FightRules(
+    val elvesAttackPower: Int = 3,
+    val goblinsWinCondition: (CombatState) -> Boolean = { s -> s.mobs.none { it.type == Elf && it.hp > 0 } }
+) {
 
     fun newFight(cavern: Cavern): Move {
         return Move(CombatState(cavern), 0)
@@ -22,10 +24,6 @@ class FightRules(val elvesAttackPower: Int = 3) {
         }
     }
 
-    fun nextRound(phase: EndOfRound): Move {
-        return Move(phase.state.nextRound(), 0)
-    }
-
     fun fullRound(phase: MobTurn): Phase {
 
         var s: Phase = phase
@@ -33,7 +31,7 @@ class FightRules(val elvesAttackPower: Int = 3) {
             s = when {
                 s.state.mobs[s.mobIndex].hp <= 0 -> nextMob(s)
                 s.state.mobs.none { it.type == Goblin && it.hp > 0 } -> ElvesWins(s.state)
-                s.state.mobs.none { it.type == Elf && it.hp > 0 } -> GoblinsWins(s.state)
+                goblinsWinCondition(s.state) -> GoblinsWins(s.state)
                 else -> mobTurn(s)
             }
         }
@@ -54,6 +52,10 @@ class FightRules(val elvesAttackPower: Int = 3) {
             s = mobPhase(s)
         }
         return s
+    }
+
+    fun nextRound(phase: EndOfRound): Move {
+        return Move(phase.state.nextRound(), 0)
     }
 
     private fun mobPhase(s: MobTurn): Phase {
@@ -83,19 +85,9 @@ class FightRules(val elvesAttackPower: Int = 3) {
 
         if (inRange.isEmpty()) return null
 
-        val cache =
-            Cache<Position, MovePriority>()
-
-        val reachable = BFSPathfinder<Position, List<Position>, MovePriority>(
-            // logWithTime = { println(it()) },
-            adderOp = { l, t -> l + t },
-            waysOutOp = { l ->
-                Direction.values().map { l.last() + it }
-                    .filter { cavern.emptyAt(it) }
-                    .filter { it !in l }
-            },
-            distanceOp = { l -> MovePriority(l.size, l.last()) },
-            meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
+        val reachable = BasicPathfinder(
+            waysOutOp = cavern::waysOut,
+            distanceOp = { l -> MovePriority(l.size, l.last()) }
         ).findShortest(listOf(from)) { list -> list.last() in inRange }
 
         return reachable?.last()
@@ -106,16 +98,10 @@ class FightRules(val elvesAttackPower: Int = 3) {
         destination: Position,
         cavern: Cavern
     ): Position {
-        val cache = Cache<Position, MovePriority>()
 
-        val path = BFSPathfinder<Position, List<Position>, MovePriority>(
-            adderOp = { l, t -> l + t },
-            waysOutOp = { list ->
-                Direction.values().map { list.last() + it }
-                    .filter { cavern.emptyAt(it) }
-            },
-            distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else null) },
-            meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
+        val path = BasicPathfinder(
+            waysOutOp = cavern::waysOut,
+            distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else null) }
         ).findShortest(listOf(from)) { list -> list.last() == destination }!!
         return path[1]
     }

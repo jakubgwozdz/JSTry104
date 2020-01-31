@@ -1,5 +1,7 @@
 package pathfinder
 
+import beveragebandits.FightRules
+import beveragebandits.Position
 import utils.PriorityQueue
 
 /**
@@ -78,16 +80,18 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
 
 }
 
-class BasicPathfinder<T : Comparable<T>>(
+class BasicPathfinder<T :Any, I:Comparable<I>>(
     loggingOp: (Any) -> Unit = {},
     adderOp: (List<T>, T) -> List<T> = { l, t -> l + t },
-    distanceOp: ((List<T>) -> Int) = { l -> l.size },
-    waysOutOp: (List<T>) -> Iterable<T>
-) : BFSPathfinder<T, List<T>, Int>(
+    distanceOp: ((List<T>) -> I),
+    waysOutOp: (List<T>) -> Iterable<T>,
+    private val cache: Cache<T, I> = Cache()
+) : BFSPathfinder<T, List<T>, I>(
     loggingOp = loggingOp,
     adderOp = adderOp,
     distanceOp = distanceOp,
-    waysOutOp = { l -> waysOutOp(l).filter { it !in l } }
+    waysOutOp = { l -> waysOutOp(l).filter { it !in l } },
+    meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
 )
 
 class Cache<R : Any, I : Comparable<I>> {
