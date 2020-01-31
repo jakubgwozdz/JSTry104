@@ -15,59 +15,98 @@ enum class MobType(val char: Char) {
     }
 }
 
-data class Mob(val position: Position, val type: MobType, val hp: Int = 200)
-
-data class FightState(
-    val cavern: Cavern,
-    val elves: List<Mob>, val goblins: List<Mob>,
-    val turnsCompleted: Int,
-    val mobsToGo: List<Mob>
-) {
-    override fun toString(): String = "After $turnsCompleted rounds: \n$cavern"
+data class Mob(val position: Position, val type: MobType, val hp: Int = 200) {
+    fun isAdjacentTo(other: Mob): Boolean = position.isAdjacentTo(other.position)
 }
 
-fun newFight(cavern: Cavern): FightState {
+sealed class FightState(
+    open val cavern: Cavern,
+    open val elves: List<Mob>,
+    open val goblins: List<Mob>,
+    open val turnsCompleted: Int
+){
+    override fun toString(): String {
+
+        val state = cavern.map.mapIndexed { y, l ->
+            val mobsOnLine = (elves.filter { it.position.y == y } + goblins.filter { it.position.y == y })
+                .sortedBy { it.position }
+            "$l   ${mobsOnLine.joinToString(",  ") { "${it.type.char}(${it.hp})" }}".trim()
+        }.joinToString("\n")
+
+        return "After $turnsCompleted rounds: \n$state"
+    }
+
+    val outcome get() = turnsCompleted * (elves.sumBy { it.hp } + goblins.sumBy { it.hp })
+
+}
+
+data class FightInProgress(
+    override val cavern: Cavern,
+    override val elves: List<Mob>,
+    override val goblins: List<Mob>,
+    override val turnsCompleted: Int,
+    val mobsToGo: List<Mob>
+) : FightState(cavern, elves, goblins, turnsCompleted) {
+    override fun toString(): String = super.toString()
+}
+
+data class FightEnded(
+    override val cavern: Cavern,
+    override val elves: List<Mob>,
+    override val goblins: List<Mob>,
+    override val turnsCompleted: Int
+) : FightState(cavern, elves, goblins, turnsCompleted) {
+
+    override fun toString(): String = super.toString()
+}
+
+fun newFight(cavern: Cavern): FightInProgress {
     val order = cavern.actionOrder().map { Mob(it.first, it.second) }
     val (elves, goblins) = order.partition { it.type == MobType.Elf }
-    return FightState(cavern, elves, goblins, 0, order)
+    return FightInProgress(cavern, elves, goblins, 0, order)
 }
 
-fun Mob.canAttack(cavern: Cavern): List<Direction> {
-    val enemyType = when (type) {
-        MobType.Elf -> MobType.Goblin
-        MobType.Goblin -> MobType.Elf
+fun FightInProgress.fightToEnd(): FightEnded {
+    var s:FightState = this
+    while (s is FightInProgress) {
+        s = s.fullRound()
+        println(s)
     }
-    return Direction.values()
-        .filter { cavern[position + it] == enemyType.char }
+    return s as FightEnded
 }
 
-fun FightState.fullRound(): FightState {
+fun FightInProgress.fullRound(): FightState {
+
     var s = this
-    while (s.mobsToGo.isNotEmpty()) s = s.mobTurn(s.mobsToGo.first())
+    while (s.mobsToGo.isNotEmpty()) s = s.mobsToGo.first().let {
+        val enemies = when (it.type) {
+            MobType.Elf -> s.goblins
+            MobType.Goblin -> s.elves
+        }
+        if (enemies.isEmpty()) return FightEnded(s.cavern, s.elves, s.goblins, s.turnsCompleted)
+        s.mobTurn(it, enemies)
+    }
+
     return s.copy(
         turnsCompleted = s.turnsCompleted + 1,
         mobsToGo = (s.elves + s.goblins).sortedBy { it.position })
 }
 
-fun FightState.mobTurn(mob: Mob): FightState {
+fun FightInProgress.mobTurn(mob: Mob, enemies: List<Mob>): FightInProgress {
     val initial = this
-    val (afterMove, mobAfterMove) = if (mob.canAttack(initial.cavern).isEmpty()) initial.mobMove(mob) else initial to mob
-    val afterAttack = if (mobAfterMove.canAttack(afterMove.cavern).isNotEmpty()) afterMove.mobAttack(mobAfterMove) else afterMove
+    val (afterMove, mobAfterMove) = initial.mobMove(mob, enemies)
+    val afterAttack = afterMove.mobAttack(mobAfterMove)
 
-    return afterAttack.copy(mobsToGo = mobsToGo.drop(1))
+    return afterAttack.copy(mobsToGo = afterAttack.mobsToGo.drop(1))
 }
 
 data class MovePriority(val distance: Int, val position: Position) : Comparable<MovePriority> {
     override fun compareTo(other: MovePriority): Int = compareValuesBy(this, other, { it.distance }, { it.position })
 }
 
-fun FightState.chooseDestination(mob: Mob): Position? {
-    val enemies = when (mob.type) {
-        MobType.Elf -> goblins
-        MobType.Goblin -> elves
-    }
+fun FightInProgress.chooseDestination(mob: Mob, enemies: List<Mob>): Position? {
 
-    if (enemies.isEmpty()) throw Exception("End of combat")
+    if (enemies.any { it.isAdjacentTo(mob) }) return null
 
     val inRange = enemies
         .flatMap { e -> Direction.values().map { e.position + it } } // adjacent places
@@ -79,28 +118,32 @@ fun FightState.chooseDestination(mob: Mob): Position? {
 
     val reachable = BFSPathfinder<Position, List<Position>, MovePriority>(
         // logWithTime = { println(it()) },
+        adderOp = { l, t -> l + t },
         waysOutOp = { l ->
             Direction.values().map { l.last() + it }
                 .filter { cavern.canGoTo(it) }
                 .filter { it !in l }
         },
         distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else l.single()) },
-        adderOp = { l, t -> l + t },
         meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
     ).findShortest(listOf(mob.position)) { list -> list.last() in inRange }
 
     return reachable?.last()
 }
 
-fun FightState.mobMove(mob: Mob): Pair<FightState, Mob> {
-    val destination = chooseDestination(mob)
+fun FightInProgress.mobMove(mob: Mob, enemies: List<Mob>): Pair<FightInProgress, Mob> {
+    val destination = chooseDestination(mob, enemies)
 
     return if (destination != null) {
-        val path = BasicPathfinder<Position>(
+        val cache = Cache<Position, MovePriority>()
+
+        val path = BFSPathfinder<Position, List<Position>, MovePriority>(
+            adderOp = { l, t -> l + t },
             waysOutOp = { list ->
                 Direction.values().map { list.last() + it }.filter { cavern.canGoTo(it) }
             },
-            distanceOp = { list -> list.size * 10000 + list.last().y * 100 + list.last().x }
+            distanceOp = { l -> MovePriority(l.size, l.last()) },
+            meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
         ).findShortest(listOf(mob.position)) { list -> list.last() == destination }!!
         val nextStep = path[1]
         val newMobState = mob.copy(position = nextStep)
@@ -119,13 +162,15 @@ data class AttackPriority(val hp: Int, val position: Position) : Comparable<Atta
     override fun compareTo(other: AttackPriority): Int = compareValuesBy(this, other, { it.hp }, { it.position })
 }
 
-fun FightState.mobAttack(mob: Mob): FightState {
+fun FightInProgress.mobAttack(mob: Mob): FightInProgress {
     val enemy = when (mob.type) {
         MobType.Elf -> goblins
         MobType.Goblin -> elves
     }
         .filter { it.position.isAdjacentTo(mob.position) }
-        .minBy { AttackPriority(it.hp, it.position) }!!
+        .minBy { AttackPriority(it.hp, it.position) }
+        ?: return this
+
     val newEnemyState = enemy.copy(hp = enemy.hp - 3)
 
     return if (newEnemyState.hp > 0) {

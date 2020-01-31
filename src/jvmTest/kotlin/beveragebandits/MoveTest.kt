@@ -24,10 +24,16 @@ class MoveTest {
 
         expect(output) {
             newFight(Cavern(input))
-                .run { mobMove(this.mobsToGo.first()).first }
+                .run {
+                    mobMove(
+                        this.mobsToGo.first(), when (mobsToGo.first().type) {
+                            MobType.Elf -> goblins
+                            MobType.Goblin -> elves
+                        }
+                    ).first
+                }
                 .cavern.toString()
         }
-
     }
 
     @Test
@@ -52,13 +58,19 @@ class MoveTest {
         expect(3 by 4) { state0.goblins.single().position }
         expect(1 by 2) { state0.mobsToGo.first().position }
 
-        val state1 = state0.run { mobMove(this.mobsToGo.first()).first }
+        val state1 = state0.run {
+            mobMove(
+                this.mobsToGo.first(), when (mobsToGo.first().type) {
+                    MobType.Elf -> goblins
+                    MobType.Goblin -> elves
+                }
+            ).first
+        }
         expect(1 by 3) { state1.elves.single().position }
         expect(3 by 4) { state1.goblins.single().position }
         expect(1 by 3) { state1.mobsToGo.first().position }
 
         expect(output) { state1.cavern.toString() }
-
     }
 
     @Test
@@ -83,13 +95,14 @@ class MoveTest {
         expect(3 by 4) { state0.goblins.single().position }
         expect(1 by 2) { state0.mobsToGo.first().position }
 
-        val state1 = state0.run { mobTurn(this.mobsToGo.first()) }
+        val state1 = state0.run {
+            mobTurn(this.mobsToGo.first(), goblins)
+        }
         expect(1 by 3) { state1.elves.single().position }
         expect(3 by 4) { state1.goblins.single().position }
         expect(3 by 4) { state1.mobsToGo.first().position }
 
         expect(output) { state1.cavern.toString() }
-
     }
 
     @Test
@@ -118,7 +131,7 @@ class MoveTest {
             """.trimIndent()
 
         val state0 = newFight(Cavern(input))
-        val state1 = state0.fullRound()
+        val state1 = state0.fullRound() as FightInProgress
         expect(1) { state1.turnsCompleted }
         expect(
             """
@@ -133,12 +146,11 @@ class MoveTest {
     #########
     """.trimIndent()
         ) { state1.cavern.toString() }
-        val state3 = state1.fullRound().fullRound()
+        val state3 = (state1.fullRound() as FightInProgress).fullRound() as FightInProgress
         val state4 = state3.fullRound()
 
         expect(output) { state3.cavern.toString() }
         expect(output) { state4.cavern.toString() }
-
     }
 
     @Test
@@ -151,9 +163,15 @@ class MoveTest {
             #######
             """.trimIndent()
 
-        expect(1 by 3) { newFight(Cavern(input)).run { chooseDestination(this.mobsToGo.first()) } }
-
+        expect(1 by 3) {
+            newFight(Cavern(input)).run {
+                chooseDestination(
+                    this.mobsToGo.first(), when (mobsToGo.first().type) {
+                        MobType.Elf -> goblins
+                        MobType.Goblin -> elves
+                    }
+                )
+            }
+        }
     }
-
-
 }
