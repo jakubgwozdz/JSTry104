@@ -1,55 +1,74 @@
 package beveragebandits
 
+import beveragebandits.MobType.Elf
+import beveragebandits.MobType.Goblin
 import pathfinder.BFSPathfinder
 import pathfinder.Cache
 import utils.replace
 
 class FightRules {
 
-    fun newFight(cavern: Cavern): FightInProgress {
+    fun newFight(cavern: Cavern): MovePhase {
         val mobs = cavern.mobs().mapIndexed { id, (position, type) -> Mob(position, type) }
-        return FightInProgress(cavern, mobs.sortedBy { it.position }, 0, mobs.indices.first)
+        return MovePhase(cavern, mobs.sortedBy { it.position }, 0, 0)
     }
 
-    private fun nextTurn(fightState: FightInProgress): FightInProgress {
-        return fightState.copy(
-            mobs = fightState.mobs.sortedBy { it.position },
-            turnsCompleted = fightState.turnsCompleted + 1,
-            next = fightState.mobs.indices.first
+    fun fightToEnd(state: FightInProgress): FightEnded {
+        var s: FightState = state
+        while (true) {
+            s = when (s) {
+                is MobTurn -> fullRound(s)
+                is EndOfRound -> nextRound(s)
+                is FightEnded -> return s
+            }
+        }
+    }
+
+    fun nextRound(state: EndOfRound): MovePhase {
+        return MovePhase(
+            cavern = state.cavern,
+            mobs = state.mobs.sortedBy { it.position },
+            roundsCompleted = state.roundsCompleted + 1,
+            next = 0
         )
     }
 
-    fun fightToEnd(fightState: FightInProgress): FightEnded {
-        var s: FightState = fightState
-        while (s is FightInProgress) {
-            s = fullRound(s)
-        }
-        return s as FightEnded
-    }
+    fun fullRound(state: MobTurn): FightState {
 
-    fun fullRound(fightState: FightInProgress): FightState {
-
-        var s = fightState
-        while (s.next in s.mobs.indices) {
-
-            if (s.mobs[s.next].hp <= 0) continue
-
-            if (s.mobs.none { it.type == MobType.Goblin && it.hp > 0 } || s.mobs.none { it.type == MobType.Elf && it.hp > 0 }) {
-                return FightEnded(s.cavern, s.mobs, s.turnsCompleted)
+        var s: FightState = state
+        while (s is MobTurn && s.next in s.mobs.indices) {
+            s = when {
+                s.mobs[s.next].hp <= 0 -> nextMob(s)
+                s.mobs.none { it.type == Goblin && it.hp > 0 } -> FightEnded(s.cavern, s.mobs, s.roundsCompleted)
+                s.mobs.none { it.type == Elf && it.hp > 0 } -> FightEnded(s.cavern, s.mobs, s.roundsCompleted)
+                else -> mobTurn(s)
             }
-
-            val s2 = nextMobTurn(s)
-            s = s2
         }
 
-        return nextTurn(s)
+        return s
     }
 
-    fun nextMobTurn(fightState: FightInProgress): FightInProgress {
+    fun nextMob(state: MobTurn): FightState {
+        return if (state.next + 1 < state.mobs.size)
+            MovePhase(state.cavern, state.mobs, state.roundsCompleted, state.next + 1)
+        else
+            EndOfRound(state.cavern, state.mobs, state.roundsCompleted)
+    }
 
-        return fightState.let { movePhase(it) }
-            .let { attackPhase(it) }
-            .let { it.copy(next = it.next + 1) }
+    fun mobTurn(state: MobTurn): FightState {
+        var s: FightState = state
+        while (s is MobTurn && s.next==state.next) {
+            s = mobPhase(s)
+        }
+        return s
+    }
+
+    private fun mobPhase(s: MobTurn): FightState {
+        return when (s) {
+            is MovePhase -> movePhase(s)
+            is AttackPhase -> attackPhase(s)
+            is EndPhase -> nextMob(s)
+        }
     }
 
     data class MovePriority(val distance: Int, val position: Position?) : Comparable<MovePriority> {
@@ -108,11 +127,9 @@ class FightRules {
         return path[1]
     }
 
-    fun movePhase(fightState: FightInProgress): FightInProgress {
+    fun movePhase(fightState: MovePhase): AttackPhase {
 
         val mob = fightState.mobs[fightState.next]
-
-        if (mob.hp <= 0) return fightState
 
         val enemyPositions = fightState.mobs
             .filterNot { it.type == mob.type }
@@ -120,13 +137,15 @@ class FightRules {
             .map { it.position }
 
         val destination = chooseDestination(mob.position, enemyPositions, fightState.cavern)
-            ?: return fightState
+            ?: return AttackPhase(fightState.cavern, fightState.mobs, fightState.roundsCompleted, fightState.next)
 
         val nextStep = nextStep(mob.position, destination, fightState.cavern)
         val newMobState = mob.copy(position = nextStep)
-        return fightState.copy(
+        return AttackPhase(
             cavern = fightState.cavern.mobMove(mob.position, nextStep),
-            mobs = fightState.mobs.replace(mob, newMobState)
+            mobs = fightState.mobs.replace(mob, newMobState),
+            roundsCompleted = fightState.roundsCompleted,
+            next = fightState.next
         )
     }
 
@@ -135,27 +154,32 @@ class FightRules {
             compareValuesBy(this, other, { it.hp }, { it.position })
     }
 
-    fun attackPhase(fightState: FightInProgress): FightInProgress {
+    fun attackPhase(fightState: AttackPhase): EndPhase {
 
         val mob = fightState.mobs[fightState.next]
-        if (mob.hp <= 0) return fightState
+
         val enemy = fightState.mobs
             .filterNot { it.type == mob.type }
             .filter { it.hp > 0 }
             .filter { it.position.isAdjacentTo(mob.position) }
             .minBy { AttackPriority(it.hp, it.position) }
-            ?: return fightState
+            ?: return EndPhase(fightState.cavern, fightState.mobs, fightState.roundsCompleted, fightState.next)
 
         val newEnemyState = enemy.copy(hp = enemy.hp - 3)
 
         return if (newEnemyState.hp > 0) {
-            fightState.copy(
-                mobs = fightState.mobs.replace(enemy, newEnemyState)
+            EndPhase(
+                cavern = fightState.cavern,
+                mobs = fightState.mobs.replace(enemy, newEnemyState),
+                roundsCompleted = fightState.roundsCompleted,
+                next = fightState.next
             )
         } else {
-            fightState.copy(
+            EndPhase(
                 cavern = fightState.cavern.without(enemy.position),
-                mobs = fightState.mobs.replace(enemy, newEnemyState)
+                mobs = fightState.mobs.replace(enemy, newEnemyState),
+                roundsCompleted = fightState.roundsCompleted,
+                next = fightState.next
             )
         }
     }

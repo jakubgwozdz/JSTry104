@@ -24,10 +24,10 @@ class AttackTest {
         val elf6 = Mob(4 by 5, MobType.Elf, 200)
         val gob1 = Mob(1 by 1, MobType.Goblin, 5)
         val gob2 = Mob(3 by 1, MobType.Goblin, 32)
-        val state33 = FightInProgress(
+        val state33 = MovePhase(
             cavern = Cavern(input.lines()),
             mobs = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6),
-            turnsCompleted = 33,
+            roundsCompleted = 33,
             next = 0
         )
 
@@ -42,10 +42,10 @@ class AttackTest {
             #######
             """.trimIndent()
 
-        expect(text33) { state33.toString() }
+        expect(text33) { state33.description() }
 
         val state33a = state33.run {
-            FightRules().nextMobTurn(this)
+            FightRules().mobTurn(this)
         }
 
         val text33a = """
@@ -59,8 +59,8 @@ class AttackTest {
             #######
             """.trimIndent()
 
-        expect(text33a) { state33a.toString() }
-        expect(listOf(gob1, elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.mobs }
-        expect(1) { state33a.next }
+        expect(text33a) { state33a.description() }
+        expect(listOf(gob1, elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.mobs.filter { it.hp > 0 } }
+        expect(1) { (state33a as MobTurn).next }
     }
 }

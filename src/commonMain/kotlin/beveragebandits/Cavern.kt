@@ -1,6 +1,7 @@
 package beveragebandits
 
 enum class Direction { N, W, E, S }
+
 data class Position(val y: Int, val x: Int) : Comparable<Position> {
     override fun compareTo(other: Position): Int =
         compareValuesBy(this, other, Position::y, Position::x)

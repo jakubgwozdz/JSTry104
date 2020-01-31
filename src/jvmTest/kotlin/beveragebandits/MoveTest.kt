@@ -57,8 +57,8 @@ class MoveTest {
             """.trimIndent()
 
         val state0 = fightRules.newFight(Cavern(input))
-        val state1 = fightRules.fullRound(state0) as FightInProgress
-        expect(1) { state1.turnsCompleted }
+        val state1 = fightRules.fullRound(state0).let { fightRules.nextRound(it as EndOfRound) }
+        expect(1) { state1.roundsCompleted }
         expect(
             """
     #########
@@ -73,8 +73,10 @@ class MoveTest {
     """.trimIndent()
         ) { state1.cavern.toString() }
         val state3 =
-            (fightRules.fullRound(state1) as FightInProgress)
-                .let { fightRules.fullRound(it) as FightInProgress }
+            fightRules.fullRound(state1)
+                .let { fightRules.nextRound(it as EndOfRound) }
+                .let { fightRules.fullRound(it) }
+                .let { fightRules.nextRound(it as EndOfRound) }
         val state4 = fightRules.fullRound(state3)
 
         expect(output) { state3.cavern.toString() }
