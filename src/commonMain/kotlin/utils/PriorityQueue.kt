@@ -68,6 +68,4 @@ class PriorityQueue<E : Any>(val comparator: Comparator<E>) {
         }
         queue[k1] = x
     }
-
-
 }

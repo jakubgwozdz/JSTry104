@@ -3,19 +3,20 @@ package beveragebandits
 import pathfinder.BFSPathfinder
 import pathfinder.Cache
 import utils.replace
-import utils.without
 
 class FightRules {
 
     fun newFight(cavern: Cavern): FightInProgress {
-        val mobs = cavern.mobs().map { Mob(it.first, it.second) }
-        return FightInProgress(cavern, mobs, 0, mobs.sortedBy { it.position })
+        val mobs = cavern.mobs().mapIndexed { id, (position, type) -> Mob(position, type) }
+        return FightInProgress(cavern, mobs.sortedBy { it.position }, 0, mobs.indices.first)
     }
 
     private fun nextTurn(fightState: FightInProgress): FightInProgress {
         return fightState.copy(
+            mobs = fightState.mobs.sortedBy { it.position },
             turnsCompleted = fightState.turnsCompleted + 1,
-            toGo = fightState.mobs.sortedBy { it.position })
+            next = fightState.mobs.indices.first
+        )
     }
 
     fun fightToEnd(fightState: FightInProgress): FightEnded {
@@ -29,9 +30,11 @@ class FightRules {
     fun fullRound(fightState: FightInProgress): FightState {
 
         var s = fightState
-        while (s.toGo.isNotEmpty()) {
+        while (s.next in s.mobs.indices) {
 
-            if (s.mobs.none { it.type == MobType.Goblin } || s.mobs.none { it.type == MobType.Elf }) {
+            if (s.mobs[s.next].hp <= 0) continue
+
+            if (s.mobs.none { it.type == MobType.Goblin && it.hp > 0 } || s.mobs.none { it.type == MobType.Elf && it.hp > 0 }) {
                 return FightEnded(s.cavern, s.mobs, s.turnsCompleted)
             }
 
@@ -44,10 +47,9 @@ class FightRules {
 
     fun nextMobTurn(fightState: FightInProgress): FightInProgress {
 
-        val afterMove = movePhase(fightState)
-        val afterAttack = attackPhase(afterMove)
-
-        return afterAttack.copy(toGo = afterAttack.toGo.drop(1))
+        return fightState.let { movePhase(it) }
+            .let { attackPhase(it) }
+            .let { it.copy(next = it.next + 1) }
     }
 
     data class MovePriority(val distance: Int, val position: Position?) : Comparable<MovePriority> {
@@ -56,16 +58,16 @@ class FightRules {
     }
 
     fun chooseDestination(
-        mob: Mob,
-        enemies: List<Mob>,
+        from: Position,
+        enemyPositions: Collection<Position>,
         cavern: Cavern
     ): Position? {
 
-        if (enemies.any { it.isAdjacentTo(mob) }) return null
+        if (enemyPositions.any { it.isAdjacentTo(from) }) return null
 
-        val inRange = enemies
-            .flatMap { e -> Direction.values().map { e.position + it } } // adjacent places
-            .filter { cavern.canGoTo(it) } // that are empty
+        val inRange = enemyPositions
+            .flatMap { e -> Direction.values().map { e + it } } // adjacent places
+            .filter { cavern.emptyAt(it) } // that are empty
 
         if (inRange.isEmpty()) return null
 
@@ -77,12 +79,12 @@ class FightRules {
             adderOp = { l, t -> l + t },
             waysOutOp = { l ->
                 Direction.values().map { l.last() + it }
-                    .filter { cavern.canGoTo(it) }
+                    .filter { cavern.emptyAt(it) }
                     .filter { it !in l }
             },
             distanceOp = { l -> MovePriority(l.size, l.last()) },
             meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
-        ).findShortest(listOf(mob.position)) { list -> list.last() in inRange }
+        ).findShortest(listOf(from)) { list -> list.last() in inRange }
 
         return reachable?.last()
     }
@@ -98,7 +100,7 @@ class FightRules {
             adderOp = { l, t -> l + t },
             waysOutOp = { list ->
                 Direction.values().map { list.last() + it }
-                    .filter { cavern.canGoTo(it) }
+                    .filter { cavern.emptyAt(it) }
             },
             distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else null) },
             meaningfulOp = { l, d -> cache.isBetterThanPrevious(l.last(), d) }
@@ -108,18 +110,23 @@ class FightRules {
 
     fun movePhase(fightState: FightInProgress): FightInProgress {
 
-        val mob = fightState.toGo.first()
-        val enemies = fightState.mobs.filterNot { it.type == mob.type }
+        val mob = fightState.mobs[fightState.next]
 
-        val destination = chooseDestination(mob, enemies, fightState.cavern)
+        if (mob.hp <= 0) return fightState
+
+        val enemyPositions = fightState.mobs
+            .filterNot { it.type == mob.type }
+            .filter { it.hp > 0 }
+            .map { it.position }
+
+        val destination = chooseDestination(mob.position, enemyPositions, fightState.cavern)
             ?: return fightState
 
         val nextStep = nextStep(mob.position, destination, fightState.cavern)
         val newMobState = mob.copy(position = nextStep)
         return fightState.copy(
             cavern = fightState.cavern.mobMove(mob.position, nextStep),
-            mobs = fightState.mobs.replace(mob, newMobState),
-            toGo = fightState.toGo.replace(mob, newMobState)
+            mobs = fightState.mobs.replace(mob, newMobState)
         )
     }
 
@@ -130,9 +137,11 @@ class FightRules {
 
     fun attackPhase(fightState: FightInProgress): FightInProgress {
 
-        val mob = fightState.toGo.first()
+        val mob = fightState.mobs[fightState.next]
+        if (mob.hp <= 0) return fightState
         val enemy = fightState.mobs
             .filterNot { it.type == mob.type }
+            .filter { it.hp > 0 }
             .filter { it.position.isAdjacentTo(mob.position) }
             .minBy { AttackPriority(it.hp, it.position) }
             ?: return fightState
@@ -141,16 +150,13 @@ class FightRules {
 
         return if (newEnemyState.hp > 0) {
             fightState.copy(
-                mobs = fightState.mobs.replace(enemy, newEnemyState),
-                toGo = fightState.toGo.replace(enemy, newEnemyState)
+                mobs = fightState.mobs.replace(enemy, newEnemyState)
             )
         } else {
             fightState.copy(
                 cavern = fightState.cavern.without(enemy.position),
-                mobs = fightState.mobs.without(enemy),
-                toGo = fightState.toGo.without(enemy)
+                mobs = fightState.mobs.replace(enemy, newEnemyState)
             )
         }
     }
-
 }

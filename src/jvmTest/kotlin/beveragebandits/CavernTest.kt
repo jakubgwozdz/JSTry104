@@ -16,8 +16,8 @@ internal class CavernTest {
                 #######
                 """.trimIndent()
         )
-        expect(true) { cavern.canGoTo(1 by 1) }
-        expect(false) { cavern.canGoTo(1 by 2) }
+        expect(true) { cavern.emptyAt(1 by 1) }
+        expect(false) { cavern.emptyAt(1 by 2) }
     }
 
     @Test
@@ -65,6 +65,4 @@ internal class CavernTest {
             cavern.mobMove(1 by 2, Direction.W).mobMove(3 by 4, Direction.N).toString()
         }
     }
-
-
 }

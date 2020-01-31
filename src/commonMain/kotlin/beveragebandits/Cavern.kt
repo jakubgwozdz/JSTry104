@@ -16,7 +16,7 @@ data class Position(val y: Int, val x: Int) : Comparable<Position> {
 
     fun isAdjacentTo(other: Position): Boolean {
         return (this.y == other.y && (this.x == other.x + 1 || this.x == other.x - 1)) ||
-                (this.x == other.x && (this.y == other.y + 1 || this.y == other.y - 1))
+            (this.x == other.x && (this.y == other.y + 1 || this.y == other.y - 1))
     }
 }
 
@@ -27,7 +27,7 @@ data class Cavern(internal val map: List<String>) {
 
     override fun toString(): String = map.joinToString("\n")
 
-    fun canGoTo(position: Position) = this[position] == '.'
+    fun emptyAt(position: Position) = this[position] == '.'
 
     operator fun get(position: Position) =
         when {

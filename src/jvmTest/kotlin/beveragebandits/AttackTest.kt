@@ -28,7 +28,7 @@ class AttackTest {
             cavern = Cavern(input.lines()),
             mobs = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6),
             turnsCompleted = 33,
-            toGo = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6)
+            next = 0
         )
 
         val text33 = """
@@ -61,7 +61,6 @@ class AttackTest {
 
         expect(text33a) { state33a.toString() }
         expect(listOf(gob1, elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.mobs }
-        expect(listOf(elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.toGo }
-
+        expect(1) { state33a.next }
     }
 }

@@ -31,7 +31,6 @@ class MoveTest {
         }
     }
 
-
     @Test
     fun fullRound3() {
         val input = """
@@ -93,13 +92,13 @@ class MoveTest {
             """.trimIndent()
 
         expect(1 by 3) {
-            fightRules.newFight(Cavern(input)).run {
-                val first = this.toGo.first()
-                fightRules.chooseDestination(
-                    first,
-                    mobs.filterNot { it.type == first.type }, cavern
-                )
-            }
+            val fight = fightRules.newFight(Cavern(input))
+            val first = fight.mobs[fight.next]
+            fightRules.chooseDestination(
+                first.position,
+                fight.mobs.filterNot { it.type == first.type }.map { it.position },
+                fight.cavern
+            )
         }
     }
 
@@ -119,17 +118,15 @@ class MoveTest {
             """.trimIndent()
 
         val fight = fightRules.newFight(Cavern(input))
-        val first = fight.toGo.first()
+        val first = fight.mobs[fight.next]
         val destination = fightRules.chooseDestination(
-            first,
-            fight.mobs.filterNot { it.type == first.type },
+            first.position,
+            fight.mobs.filterNot { it.type == first.type }.map { it.position },
             fight.cavern
         )!!
 
         expect(8 by 8) { destination }
 
         expect(1 by 4) { fightRules.nextStep(first.position, destination, fight.cavern) }
-
     }
-
 }

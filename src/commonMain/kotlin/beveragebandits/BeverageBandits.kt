@@ -17,7 +17,7 @@ sealed class FightState(
     open val cavern: Cavern,
     open val mobs: List<Mob>,
     open val turnsCompleted: Int
-){
+) {
     override fun toString(): String {
 
         val state = cavern.map.mapIndexed { y, l ->
@@ -37,7 +37,7 @@ data class FightInProgress(
     override val cavern: Cavern,
     override val mobs: List<Mob>,
     override val turnsCompleted: Int,
-    val toGo: List<Mob>
+    val next: Int
 ) : FightState(cavern, mobs, turnsCompleted) {
     override fun toString(): String = super.toString()
 }

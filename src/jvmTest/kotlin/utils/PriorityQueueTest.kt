@@ -1,7 +1,6 @@
 package utils
 
 import org.junit.jupiter.api.Test
-import utils.PriorityQueue
 import kotlin.test.expect
 
 internal class PriorityQueueTest {
@@ -32,8 +31,5 @@ internal class PriorityQueueTest {
         expect(true) { queue.isNotEmpty() }
         expect(32) { queue.poll() }
         expect(false) { queue.isNotEmpty() }
-
-
     }
-
 }
