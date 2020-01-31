@@ -22,6 +22,7 @@ class FightRulesTest {
         expect(27730) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -41,6 +42,7 @@ class FightRulesTest {
         expect(36334) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -60,6 +62,7 @@ class FightRulesTest {
         expect(39514) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -78,6 +81,7 @@ class FightRulesTest {
         expect(27755) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -96,6 +100,7 @@ class FightRulesTest {
         expect(28944) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -116,6 +121,7 @@ class FightRulesTest {
         expect(18740) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }
@@ -127,6 +133,7 @@ class FightRulesTest {
         expect(222831) {
             val fight = fightRules.newFight(Cavern(input))
             fightRules.fightToEnd(fight)
+                .state
                 .outcome
         }
     }

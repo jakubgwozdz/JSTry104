@@ -4,43 +4,36 @@ import beveragebandits.MobType.Elf
 import beveragebandits.MobType.Goblin
 import pathfinder.BFSPathfinder
 import pathfinder.Cache
-import utils.replace
 
-class FightRules {
+class FightRules(val elvesAttackPower: Int = 3) {
 
-    fun newFight(cavern: Cavern): MovePhase {
-        val mobs = cavern.mobs().mapIndexed { id, (position, type) -> Mob(position, type) }
-        return MovePhase(cavern, mobs.sortedBy { it.position }, 0, 0)
+    fun newFight(cavern: Cavern): Move {
+        return Move(CombatState(cavern), 0)
     }
 
-    fun fightToEnd(state: FightInProgress): FightEnded {
-        var s: FightState = state
+    fun fightToEnd(phase: CombatInProgress): CombatEnded {
+        var s: Phase = phase
         while (true) {
             s = when (s) {
                 is MobTurn -> fullRound(s)
                 is EndOfRound -> nextRound(s)
-                is FightEnded -> return s
+                is CombatEnded -> return s
             }
         }
     }
 
-    fun nextRound(state: EndOfRound): MovePhase {
-        return MovePhase(
-            cavern = state.cavern,
-            mobs = state.mobs.sortedBy { it.position },
-            roundsCompleted = state.roundsCompleted + 1,
-            next = 0
-        )
+    fun nextRound(phase: EndOfRound): Move {
+        return Move(phase.state.nextRound(), 0)
     }
 
-    fun fullRound(state: MobTurn): FightState {
+    fun fullRound(phase: MobTurn): Phase {
 
-        var s: FightState = state
-        while (s is MobTurn && s.next in s.mobs.indices) {
+        var s: Phase = phase
+        while (s is MobTurn && s.mobIndex in s.state.mobs.indices) {
             s = when {
-                s.mobs[s.next].hp <= 0 -> nextMob(s)
-                s.mobs.none { it.type == Goblin && it.hp > 0 } -> FightEnded(s.cavern, s.mobs, s.roundsCompleted)
-                s.mobs.none { it.type == Elf && it.hp > 0 } -> FightEnded(s.cavern, s.mobs, s.roundsCompleted)
+                s.state.mobs[s.mobIndex].hp <= 0 -> nextMob(s)
+                s.state.mobs.none { it.type == Goblin && it.hp > 0 } -> ElvesWins(s.state)
+                s.state.mobs.none { it.type == Elf && it.hp > 0 } -> GoblinsWins(s.state)
                 else -> mobTurn(s)
             }
         }
@@ -48,26 +41,26 @@ class FightRules {
         return s
     }
 
-    fun nextMob(state: MobTurn): FightState {
-        return if (state.next + 1 < state.mobs.size)
-            MovePhase(state.cavern, state.mobs, state.roundsCompleted, state.next + 1)
+    fun nextMob(phase: MobTurn): Phase {
+        return if (phase.mobIndex + 1 in phase.state.mobs.indices)
+            Move(phase.state, phase.mobIndex + 1)
         else
-            EndOfRound(state.cavern, state.mobs, state.roundsCompleted)
+            EndOfRound(phase.state)
     }
 
-    fun mobTurn(state: MobTurn): FightState {
-        var s: FightState = state
-        while (s is MobTurn && s.next==state.next) {
+    fun mobTurn(state: MobTurn): Phase {
+        var s: Phase = state
+        while (s is MobTurn && s.mobIndex == state.mobIndex) {
             s = mobPhase(s)
         }
         return s
     }
 
-    private fun mobPhase(s: MobTurn): FightState {
+    private fun mobPhase(s: MobTurn): Phase {
         return when (s) {
-            is MovePhase -> movePhase(s)
-            is AttackPhase -> attackPhase(s)
-            is EndPhase -> nextMob(s)
+            is Move -> movePhase(s)
+            is Attack -> attackPhase(s)
+            is EndTurn -> nextMob(s)
         }
     }
 
@@ -127,25 +120,22 @@ class FightRules {
         return path[1]
     }
 
-    fun movePhase(fightState: MovePhase): AttackPhase {
+    fun movePhase(phase: Move): Attack {
 
-        val mob = fightState.mobs[fightState.next]
+        val mob = phase.state.mobs[phase.mobIndex]
 
-        val enemyPositions = fightState.mobs
+        val enemyPositions = phase.state.mobs
             .filterNot { it.type == mob.type }
             .filter { it.hp > 0 }
             .map { it.position }
 
-        val destination = chooseDestination(mob.position, enemyPositions, fightState.cavern)
-            ?: return AttackPhase(fightState.cavern, fightState.mobs, fightState.roundsCompleted, fightState.next)
+        val destination = chooseDestination(mob.position, enemyPositions, phase.state.cavern)
+            ?: return Attack(phase.state, phase.mobIndex)
 
-        val nextStep = nextStep(mob.position, destination, fightState.cavern)
-        val newMobState = mob.copy(position = nextStep)
-        return AttackPhase(
-            cavern = fightState.cavern.mobMove(mob.position, nextStep),
-            mobs = fightState.mobs.replace(mob, newMobState),
-            roundsCompleted = fightState.roundsCompleted,
-            next = fightState.next
+        val nextStep = nextStep(mob.position, destination, phase.state.cavern)
+        return Attack(
+            state = phase.state.moveMob(mob, nextStep),
+            mobIndex = phase.mobIndex
         )
     }
 
@@ -154,33 +144,19 @@ class FightRules {
             compareValuesBy(this, other, { it.hp }, { it.position })
     }
 
-    fun attackPhase(fightState: AttackPhase): EndPhase {
+    fun attackPhase(phase: Attack): EndTurn {
 
-        val mob = fightState.mobs[fightState.next]
+        val mob = phase.state.mobs[phase.mobIndex]
 
-        val enemy = fightState.mobs
+        val enemy = phase.state.mobs
             .filterNot { it.type == mob.type }
             .filter { it.hp > 0 }
             .filter { it.position.isAdjacentTo(mob.position) }
             .minBy { AttackPriority(it.hp, it.position) }
-            ?: return EndPhase(fightState.cavern, fightState.mobs, fightState.roundsCompleted, fightState.next)
 
-        val newEnemyState = enemy.copy(hp = enemy.hp - 3)
-
-        return if (newEnemyState.hp > 0) {
-            EndPhase(
-                cavern = fightState.cavern,
-                mobs = fightState.mobs.replace(enemy, newEnemyState),
-                roundsCompleted = fightState.roundsCompleted,
-                next = fightState.next
-            )
-        } else {
-            EndPhase(
-                cavern = fightState.cavern.without(enemy.position),
-                mobs = fightState.mobs.replace(enemy, newEnemyState),
-                roundsCompleted = fightState.roundsCompleted,
-                next = fightState.next
-            )
-        }
+        return EndTurn(
+            state = enemy?.let { phase.state.hitMob(it, if (mob.type == Elf) elvesAttackPower else 3) } ?: phase.state,
+            mobIndex = phase.mobIndex
+        )
     }
 }

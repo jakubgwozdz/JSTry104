@@ -27,7 +27,7 @@ class MoveTest {
         expect(output) {
             fightRules.newFight(Cavern(input))
                 .let { fightRules.movePhase(it) }
-                .cavern.toString()
+                .state.cavern.toString()
         }
     }
 
@@ -58,7 +58,7 @@ class MoveTest {
 
         val state0 = fightRules.newFight(Cavern(input))
         val state1 = fightRules.fullRound(state0).let { fightRules.nextRound(it as EndOfRound) }
-        expect(1) { state1.roundsCompleted }
+        expect(1) { state1.state.roundsCompleted }
         expect(
             """
     #########
@@ -71,7 +71,7 @@ class MoveTest {
     #.......#
     #########
     """.trimIndent()
-        ) { state1.cavern.toString() }
+        ) { state1.state.cavern.toString() }
         val state3 =
             fightRules.fullRound(state1)
                 .let { fightRules.nextRound(it as EndOfRound) }
@@ -79,8 +79,8 @@ class MoveTest {
                 .let { fightRules.nextRound(it as EndOfRound) }
         val state4 = fightRules.fullRound(state3)
 
-        expect(output) { state3.cavern.toString() }
-        expect(output) { state4.cavern.toString() }
+        expect(output) { state3.state.cavern.toString() }
+        expect(output) { state4.state.cavern.toString() }
     }
 
     @Test
@@ -95,11 +95,11 @@ class MoveTest {
 
         expect(1 by 3) {
             val fight = fightRules.newFight(Cavern(input))
-            val first = fight.mobs[fight.next]
+            val first = fight.state.mobs[fight.mobIndex]
             fightRules.chooseDestination(
                 first.position,
-                fight.mobs.filterNot { it.type == first.type }.map { it.position },
-                fight.cavern
+                fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
+                fight.state.cavern
             )
         }
     }
@@ -120,15 +120,15 @@ class MoveTest {
             """.trimIndent()
 
         val fight = fightRules.newFight(Cavern(input))
-        val first = fight.mobs[fight.next]
+        val first = fight.state.mobs[fight.mobIndex]
         val destination = fightRules.chooseDestination(
             first.position,
-            fight.mobs.filterNot { it.type == first.type }.map { it.position },
-            fight.cavern
+            fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
+            fight.state.cavern
         )!!
 
         expect(8 by 8) { destination }
 
-        expect(1 by 4) { fightRules.nextStep(first.position, destination, fight.cavern) }
+        expect(1 by 4) { fightRules.nextStep(first.position, destination, fight.state.cavern) }
     }
 }
