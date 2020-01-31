@@ -26,19 +26,18 @@ class AttackTest {
         val gob2 = Mob(3 by 1, MobType.Goblin, 32)
         val state33 = FightInProgress(
             cavern = Cavern(input.lines()),
-            elves = listOf(elf1, elf2, elf3, elf4, elf5, elf6),
-            goblins = listOf(gob1, gob2),
+            mobs = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6),
             turnsCompleted = 33,
-            mobsToGo = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6)
+            toGo = listOf(gob1, elf1, elf2, gob2, elf3, elf4, elf5, elf6)
         )
 
         val text33 = """
-            After 33 rounds: 
+            After 33 rounds:
             #######
-            #GE.#E#   G(5),  E(200),  E(200)
+            #GE.#E#   G(5), E(200), E(200)
             #E#...#   E(2)
-            #GE##.#   G(32),  E(200)
-            #E..#E#   E(200),  E(200)
+            #GE##.#   G(32), E(200)
+            #E..#E#   E(200), E(200)
             #.....#
             #######
             """.trimIndent()
@@ -46,24 +45,23 @@ class AttackTest {
         expect(text33) { state33.toString() }
 
         val state33a = state33.run {
-            mobTurn(mobsToGo.first().also { check(it == gob1) }, elves)
+            FightRules().nextMobTurn(this)
         }
 
         val text33a = """
-            After 33 rounds: 
+            After 33 rounds:
             #######
-            #GE.#E#   G(5),  E(200),  E(200)
+            #GE.#E#   G(5), E(200), E(200)
             #.#...#
-            #GE##.#   G(32),  E(200)
-            #E..#E#   E(200),  E(200)
+            #GE##.#   G(32), E(200)
+            #E..#E#   E(200), E(200)
             #.....#
             #######
             """.trimIndent()
 
         expect(text33a) { state33a.toString() }
-        expect(listOf(elf1, elf2, elf4, elf5, elf6)) { state33a.elves }
-        expect(listOf(elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.mobsToGo }
-
+        expect(listOf(gob1, elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.mobs }
+        expect(listOf(elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.toGo }
 
     }
 }

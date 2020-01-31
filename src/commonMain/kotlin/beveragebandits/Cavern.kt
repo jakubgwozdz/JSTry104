@@ -16,12 +16,11 @@ data class Position(val y: Int, val x: Int) : Comparable<Position> {
 
     fun isAdjacentTo(other: Position): Boolean {
         return (this.y == other.y && (this.x == other.x + 1 || this.x == other.x - 1)) ||
-            (this.x == other.x && (this.y == other.y + 1 || this.y == other.y - 1))
+                (this.x == other.x && (this.y == other.y + 1 || this.y == other.y - 1))
     }
 }
 
-infix fun Int.by(x: Int): Position =
-    Position(this, x)
+infix fun Int.by(x: Int): Position = Position(this, x)
 
 data class Cavern(internal val map: List<String>) {
     constructor(input: String) : this(input.lines())
@@ -44,7 +43,7 @@ fun Array<String>.with(position: Position, char: Char) = this.apply {
         .concatToString()
 }
 
-fun Cavern.killUnit(position: Position): Cavern {
+fun Cavern.without(position: Position): Cavern {
     check(this[position] in MobType.chars) { "no mob at $position" }
     return Cavern(
         map.toTypedArray()
@@ -67,7 +66,7 @@ fun Cavern.mobMove(from: Position, to: Position): Cavern {
 
 fun Cavern.mobMove(from: Position, direction: Direction) = this.mobMove(from, from + direction)
 
-fun Cavern.actionOrder() = map.indices
+fun Cavern.mobs() = map.indices
     .flatMap { y ->
         map[y].indices
             .filter { x -> map[y][x] in MobType.chars }

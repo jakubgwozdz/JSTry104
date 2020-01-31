@@ -38,7 +38,7 @@ internal class CavernTest {
                 2 by 1 to MobType.Elf, 2 by 3 to MobType.Goblin, 2 by 5 to MobType.Elf,
                 3 by 2 to MobType.Goblin, 3 by 4 to MobType.Elf
             )
-        ) { cavern.actionOrder() }
+        ) { cavern.mobs() }
     }
 
     @Test

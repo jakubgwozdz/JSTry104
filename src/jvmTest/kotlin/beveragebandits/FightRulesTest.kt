@@ -3,7 +3,9 @@ package beveragebandits
 import kotlin.test.Test
 import kotlin.test.expect
 
-class FightTest {
+class FightRulesTest {
+
+    val fightRules = FightRules()
 
     @Test
     fun completeExample1() {
@@ -17,7 +19,11 @@ class FightTest {
             #######
             """.trimIndent()
 
-        expect(27730) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(27730) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
@@ -32,7 +38,11 @@ class FightTest {
             #######
             """.trimIndent()
 
-        expect(36334) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(36334) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
@@ -47,7 +57,11 @@ class FightTest {
             #######
             """.trimIndent()
 
-        expect(39514) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(39514) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
@@ -61,7 +75,11 @@ class FightTest {
             #...E.#
             #######
             """.trimIndent()
-        expect(27755) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(27755) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
@@ -75,7 +93,11 @@ class FightTest {
             #...#G#
             #######
             """.trimIndent()
-        expect(28944) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(28944) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
@@ -91,15 +113,21 @@ class FightTest {
             #.....G.#   
             #########
             """.trimIndent()
-        expect(18740) { newFight(Cavern(input)).fightToEnd().outcome }
+        expect(18740) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
+        }
     }
 
     @Test
     fun completeJG() {
         val input = beveragebandits.jakubgwozdz.cavernInput
 
-        expect(220321) {
-            newFight(Cavern(input)).fightToEnd().also{println(it)}.outcome
+        expect(222831) {
+            val fight = fightRules.newFight(Cavern(input))
+            fightRules.fightToEnd(fight)
+                .outcome
         }
     }
 }
