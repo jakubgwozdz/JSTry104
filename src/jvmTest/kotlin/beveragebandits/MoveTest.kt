@@ -28,7 +28,7 @@ class MoveTest {
             fightRules.newFight(Cavern(input))
                 .let { fightRules.firstMob(it) }
                 .let { fightRules.beginTurn(it) }
-                .let { fightRules.movePhase(it) }
+                .let { fightRules.movePhase(it as Move) }
                 .state.cavern.toString()
         }
     }
@@ -60,7 +60,7 @@ class MoveTest {
 
         val state0 = fightRules.newFight(Cavern(input))
             .let { fightRules.firstMob(it) }
-            .let { fightRules.beginTurn(it) }
+            // .let { fightRules.beginTurn(it) }
 
         val state1 = fightRules.fullRound(state0)
             .let { fightRules.nextRound(it as EndOfRound) }

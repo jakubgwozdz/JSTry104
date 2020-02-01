@@ -104,15 +104,15 @@ class EndOfRound(
     state: CombatState
 ) : CombatInProgress(state)
 
-sealed class CombatEnded(
+sealed class EndOfCombat(
     state: CombatState
 ) : Phase(state)
 
 class ElvesWin(
     state: CombatState
-) : CombatEnded(state)
+) : EndOfCombat(state)
 
 class GoblinsWin(
     state: CombatState
-) : CombatEnded(state)
+) : EndOfCombat(state)
 

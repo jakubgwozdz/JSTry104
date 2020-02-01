@@ -15,14 +15,14 @@ class FightRules(
         return StartOfRound(CombatState(cavern))
     }
 
-    fun fightToEnd(phase: CombatInProgress): CombatEnded {
+    fun fightToEnd(phase: CombatInProgress): EndOfCombat {
         var s: Phase = phase
         while (true) {
             s = when (s) {
                 is StartOfRound -> firstMob(s)
                 is MobTurn -> fullRound(s)
                 is EndOfRound -> nextRound(s)
-                is CombatEnded -> return s
+                is EndOfCombat -> return s
             }
         }
     }
@@ -33,14 +33,9 @@ class FightRules(
 
         var p: Phase = phase
         while (p is MobTurn) {
-            p = when {
-                p is StartOfTurn && p.state.mobs[p.mobIndex].hp <= 0 -> EndOfTurn(p.state, p.mobIndex)
-                goblinsWin(p.state) -> GoblinsWin(p.state)
-                elvesWin(p.state) -> ElvesWin(p.state)
-                else -> mobTurn(p)
-            }
+            p = mobTurn(p)
         }
-
+        check(p is EndOfRound || p is EndOfCombat)
         return p
     }
 
@@ -54,25 +49,26 @@ class FightRules(
     fun mobTurn(phase: MobTurn): Phase {
         var p: Phase = phase
         while (p is MobTurn && p.mobIndex == phase.mobIndex) {
-            p = mobPhase(p)
+            p = when (p) {
+                is StartOfTurn -> beginTurn(p)
+                is Move -> movePhase(p)
+                is Attack -> attackPhase(p)
+                is EndOfTurn -> nextMob(p)
+            }
         }
         return p
     }
 
     fun nextRound(phase: EndOfRound) = StartOfRound(phase.state.nextRound())
 
-    private fun mobPhase(p: MobTurn): Phase {
-        return when (p) {
-            is StartOfTurn -> beginTurn(p)
-            is Move -> movePhase(p)
-            is Attack -> attackPhase(p)
-            is EndOfTurn -> nextMob(p)
-        }
-    }
+    fun beginTurn(p: StartOfTurn) =
+        if (p.state.mobs[p.mobIndex].hp > 0) Move(p.state, p.mobIndex)
+        else EndOfTurn(p.state, p.mobIndex)
 
-    fun beginTurn(p: StartOfTurn) = Move(p.state, p.mobIndex)
+    fun movePhase(p: Move): Phase {
 
-    fun movePhase(p: Move): Attack {
+        if (goblinsWin(p.state)) return GoblinsWin(p.state)
+        if (elvesWin(p.state)) return ElvesWin(p.state)
 
         val mob = p.state.mobs[p.mobIndex]
 
@@ -81,14 +77,12 @@ class FightRules(
             .filter { it.hp > 0 }
             .map { it.position }
 
-        val destination = chooseDestination(mob.position, enemyPositions, p.state.cavern)
-            ?: return Attack(p.state, p.mobIndex)
+        val newState = (chooseDestination(mob.position, enemyPositions, p.state.cavern)
+            ?.let { destination -> nextStep(mob.position, destination, p.state.cavern) }
+            ?.let { nextStep -> p.state.moveMob(mob, nextStep) }
+            ?: p.state)
 
-        val nextStep = nextStep(mob.position, destination, p.state.cavern)
-        return Attack(
-            state = p.state.moveMob(mob, nextStep),
-            mobIndex = p.mobIndex
-        )
+        return Attack(newState, p.mobIndex)
     }
 
     fun attackPhase(p: Attack): EndOfTurn {
@@ -101,11 +95,7 @@ class FightRules(
             ?.let { p.state.hitMob(it, if (mob.type == Elf) elvesAttackPower else goblinsAttackPower) }
             ?: p.state
 
-        return EndOfTurn(
-            state = newState,
-            mobIndex = p.mobIndex
-        )
+        return EndOfTurn(newState, p.mobIndex)
     }
-
 }
 
