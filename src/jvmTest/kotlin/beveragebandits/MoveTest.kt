@@ -26,6 +26,8 @@ class MoveTest {
 
         expect(output) {
             fightRules.newFight(Cavern(input))
+                .let { fightRules.firstMob(it) }
+                .let { fightRules.beginTurn(it) }
                 .let { fightRules.movePhase(it) }
                 .state.cavern.toString()
         }
@@ -57,7 +59,14 @@ class MoveTest {
             """.trimIndent()
 
         val state0 = fightRules.newFight(Cavern(input))
-        val state1 = fightRules.fullRound(state0).let { fightRules.nextRound(it as EndOfRound) }
+            .let { fightRules.firstMob(it) }
+            .let { fightRules.beginTurn(it) }
+
+        val state1 = fightRules.fullRound(state0)
+            .let { fightRules.nextRound(it as EndOfRound) }
+            .let { fightRules.firstMob(it) }
+            .let { fightRules.beginTurn(it) }
+
         expect(1) { state1.state.roundsCompleted }
         expect(
             """
@@ -75,8 +84,13 @@ class MoveTest {
         val state3 =
             fightRules.fullRound(state1)
                 .let { fightRules.nextRound(it as EndOfRound) }
+                .let { fightRules.firstMob(it) }
+                .let { fightRules.beginTurn(it) }
                 .let { fightRules.fullRound(it) }
                 .let { fightRules.nextRound(it as EndOfRound) }
+                .let { fightRules.firstMob(it) }
+                .let { fightRules.beginTurn(it) }
+
         val state4 = fightRules.fullRound(state3)
 
         expect(output) { state3.state.cavern.toString() }
@@ -95,8 +109,11 @@ class MoveTest {
 
         expect(1 by 3) {
             val fight = fightRules.newFight(Cavern(input))
+                .let { fightRules.firstMob(it) }
+                .let { fightRules.beginTurn(it) }
+
             val first = fight.state.mobs[fight.mobIndex]
-            fightRules.chooseDestination(
+            chooseDestination(
                 first.position,
                 fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
                 fight.state.cavern
@@ -120,8 +137,11 @@ class MoveTest {
             """.trimIndent()
 
         val fight = fightRules.newFight(Cavern(input))
+            .let { fightRules.firstMob(it) }
+            .let { fightRules.beginTurn(it) }
+
         val first = fight.state.mobs[fight.mobIndex]
-        val destination = fightRules.chooseDestination(
+        val destination = chooseDestination(
             first.position,
             fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
             fight.state.cavern
@@ -129,6 +149,6 @@ class MoveTest {
 
         expect(8 by 8) { destination }
 
-        expect(1 by 4) { fightRules.nextStep(first.position, destination, fight.state.cavern) }
+        expect(1 by 4) { nextStep(first.position, destination, fight.state.cavern) }
     }
 }

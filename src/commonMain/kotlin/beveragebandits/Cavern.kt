@@ -55,7 +55,9 @@ fun Cavern.without(position: Position): Cavern {
 
 fun Cavern.mobMove(from: Position, to: Position): Cavern {
     val mobChar = this[from]
-    check(mobChar in MobType.chars) { "no mob at $from" }
+    check(mobChar in MobType.chars) {
+        "no mob at $from"
+    }
     check(this[to] == '.') { "not empty at $to" }
     return Cavern(
         map.toTypedArray()

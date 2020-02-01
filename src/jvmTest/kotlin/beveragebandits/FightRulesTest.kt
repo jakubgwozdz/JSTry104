@@ -154,7 +154,7 @@ class FightRulesTest {
                 phase = rules.fightToEnd(phase)
 
                 println("AP $attackPower outcome ${phase.state.outcome}")
-            } while (phase !is ElvesWins)
+            } while (phase !is ElvesWin)
 
             phase.state.outcome
         }

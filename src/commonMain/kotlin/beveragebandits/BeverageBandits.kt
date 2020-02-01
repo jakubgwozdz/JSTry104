@@ -12,7 +12,8 @@ enum class MobType(val char: Char) {
 }
 
 data class Mob(val position: Position, val type: MobType, val hp: Int = 200) {
-    fun isAdjacentTo(other: Mob): Boolean = position.isAdjacentTo(other.position)
+    fun withPosition(p: Position) = copy(position = p)
+    fun withHp(hp: Int) = copy(hp = hp)
 }
 
 data class CombatState(
@@ -31,14 +32,16 @@ data class CombatState(
 
     fun moveMob(mob: Mob, destination: Position) = CombatState(
         cavern.mobMove(mob.position, destination),
-        mobs.replace(mob, mob.copy(position = destination)),
+        mobs.replace(mob, mob.withPosition(destination)),
         roundsCompleted
     )
+        .also { it.consistencyCheck() }
 
-    fun hitMob(mob: Mob, attackPower: Int):CombatState {
+    fun hitMob(mob: Mob, attackPower: Int): CombatState {
         val newHp = mob.hp - attackPower
         val c = if (newHp <= 0) cavern.without(mob.position) else cavern
-        return CombatState(c, mobs.replace(mob, mob.copy(hp = newHp)), roundsCompleted)
+        return CombatState(c, mobs.replace(mob, mob.withHp(newHp)), roundsCompleted)
+            .also { it.consistencyCheck() }
     }
 
     fun description(): String {
@@ -52,48 +55,64 @@ data class CombatState(
         return "After $roundsCompleted rounds:\n$state"
     }
 
+    internal fun consistencyCheck() =
+        check(cavern.mobs().map { it.first }.sorted() == mobs.filter { it.hp > 0 }.map { it.position }.sorted()) {
+            "inconsistency in state"
+        }
+
     val outcome get() = roundsCompleted * mobs.filter { it.hp > 0 }.sumBy { it.hp }
 }
 
 sealed class Phase(
-    open val state: CombatState
+    val state: CombatState
 )
 
-sealed class CombatInProgress(override val state: CombatState) : Phase(state)
+sealed class CombatInProgress(
+    state: CombatState
+) : Phase(state)
+
+class StartOfRound(
+    state: CombatState
+) : CombatInProgress(state)
 
 sealed class MobTurn(
     state: CombatState,
-    open val mobIndex: Int
+    val mobIndex: Int
 ) : CombatInProgress(state)
 
-data class Move(
-    override val state: CombatState,
-    override val mobIndex: Int
+class StartOfTurn(
+    state: CombatState,
+    mobIndex: Int
 ) : MobTurn(state, mobIndex)
 
-data class Attack(
-    override val state: CombatState,
-    override val mobIndex: Int
+class Move(
+    state: CombatState,
+    mobIndex: Int
 ) : MobTurn(state, mobIndex)
 
-data class EndTurn(
-    override val state: CombatState,
-    override val mobIndex: Int
+class Attack(
+    state: CombatState,
+    mobIndex: Int
 ) : MobTurn(state, mobIndex)
 
-data class EndOfRound(
-    override val state: CombatState
+class EndOfTurn(
+    state: CombatState,
+    mobIndex: Int
+) : MobTurn(state, mobIndex)
+
+class EndOfRound(
+    state: CombatState
 ) : CombatInProgress(state)
 
 sealed class CombatEnded(
     state: CombatState
 ) : Phase(state)
 
-data class ElvesWins(
-    override val state: CombatState
+class ElvesWin(
+    state: CombatState
 ) : CombatEnded(state)
 
-data class GoblinsWins(
-    override val state: CombatState
+class GoblinsWin(
+    state: CombatState
 ) : CombatEnded(state)
 
