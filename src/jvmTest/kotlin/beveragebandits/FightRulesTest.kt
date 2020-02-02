@@ -20,7 +20,7 @@ class FightRulesTest {
             """.trimIndent()
 
         expect(27730) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -40,7 +40,7 @@ class FightRulesTest {
             """.trimIndent()
 
         expect(36334) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -60,7 +60,7 @@ class FightRulesTest {
             """.trimIndent()
 
         expect(39514) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -79,7 +79,7 @@ class FightRulesTest {
             #######
             """.trimIndent()
         expect(27755) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -98,7 +98,7 @@ class FightRulesTest {
             #######
             """.trimIndent()
         expect(28944) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -119,7 +119,7 @@ class FightRulesTest {
             #########
             """.trimIndent()
         expect(18740) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -131,7 +131,7 @@ class FightRulesTest {
         val input = beveragebandits.jakubgwozdz.cavernInput
 
         expect(222831) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
             fightRules.fightToEnd(fight)
                 .state
                 .outcome
@@ -150,7 +150,7 @@ class FightRulesTest {
             do {
                 attackPower++
                 val rules = FightRules(attackPower, {s->s.mobs.any { it.type==MobType.Elf && it.hp <= 0 }})
-                phase = rules.newFight(Cavern(input))
+                phase = rules.newCombat(Cavern(input))
                 phase = rules.fightToEnd(phase)
 
                 println("AP $attackPower outcome ${phase.state.outcome}")

@@ -25,7 +25,7 @@ class MoveTest {
             """.trimIndent()
 
         expect(output) {
-            fightRules.newFight(Cavern(input))
+            fightRules.newCombat(Cavern(input))
                 .let { fightRules.firstMob(it) }
                 .let { fightRules.beginTurn(it) }
                 .let { fightRules.movePhase(it as Move) }
@@ -58,9 +58,9 @@ class MoveTest {
             #########
             """.trimIndent()
 
-        val state0 = fightRules.newFight(Cavern(input))
+        val state0 = fightRules.newCombat(Cavern(input))
             .let { fightRules.firstMob(it) }
-            // .let { fightRules.beginTurn(it) }
+        // .let { fightRules.beginTurn(it) }
 
         val state1 = fightRules.fullRound(state0)
             .let { fightRules.nextRound(it as EndOfRound) }
@@ -108,7 +108,7 @@ class MoveTest {
             """.trimIndent()
 
         expect(1 by 3) {
-            val fight = fightRules.newFight(Cavern(input))
+            val fight = fightRules.newCombat(Cavern(input))
                 .let { fightRules.firstMob(it) }
                 .let { fightRules.beginTurn(it) }
 
@@ -117,7 +117,7 @@ class MoveTest {
                 first.position,
                 fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
                 fight.state.cavern
-            )
+            )?.last()
         }
     }
 
@@ -136,19 +136,19 @@ class MoveTest {
             ##########
             """.trimIndent()
 
-        val fight = fightRules.newFight(Cavern(input))
+        val fight = fightRules.newCombat(Cavern(input))
             .let { fightRules.firstMob(it) }
             .let { fightRules.beginTurn(it) }
 
         val first = fight.state.mobs[fight.mobIndex]
-        val destination = chooseDestination(
+        val path = chooseDestination(
             first.position,
             fight.state.mobs.filterNot { it.type == first.type }.map { it.position },
             fight.state.cavern
         )!!
 
-        expect(8 by 8) { destination }
+        expect(8 by 8) { path.last() }
 
-        expect(1 by 4) { nextStep(first.position, destination, fight.state.cavern) }
+        expect(1 by 4) { path[1] }
     }
 }

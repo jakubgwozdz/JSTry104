@@ -2,16 +2,24 @@ package beveragebandits
 
 import pathfinder.BasicPathfinder
 
-data class MovePriority(val distance: Int, val position: Position?) : Comparable<MovePriority> {
+data class MovePriority(val path: List<Position>) : Comparable<MovePriority> {
     override fun compareTo(other: MovePriority): Int =
-        compareValuesBy(this, other, { it.distance }, { it.position })
+        compareBy<MovePriority> { it.path.size }
+            .thenBy { it.path.last() }
+            .thenComparator { a, b ->
+                a.path.asSequence().zip(b.path.asSequence())
+                    .map { (aa, bb) -> aa.compareTo(bb) }
+                    .firstOrNull { it != 0 }
+                    ?: 0
+            }
+            .compare(this, other)
 }
 
 fun chooseDestination(
     from: Position,
     enemyPositions: Collection<Position>,
     cavern: Cavern
-): Position? {
+): List<Position>? {
 
     if (enemyPositions.any { it.isAdjacentTo(from) }) return null
 
@@ -23,21 +31,8 @@ fun chooseDestination(
 
     val reachable = BasicPathfinder(
         waysOutOp = cavern::waysOut,
-        distanceOp = { l -> MovePriority(l.size, l.last()) }
+        distanceOp = { l -> MovePriority(l) }
     ).findShortest(listOf(from)) { list -> list.last() in inRange }
 
-    return reachable?.last()
-}
-
-fun nextStep(
-    from: Position,
-    destination: Position,
-    cavern: Cavern
-): Position {
-
-    val path = BasicPathfinder(
-        waysOutOp = cavern::waysOut,
-        distanceOp = { l -> MovePriority(l.size, if (l.size > 1) l[1] else null) }
-    ).findShortest(listOf(from)) { list -> list.last() == destination }!!
-    return path[1]
+    return reachable
 }

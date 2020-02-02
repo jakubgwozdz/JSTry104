@@ -11,8 +11,9 @@ class FightRules(
     val elvesWin: (CombatState) -> Boolean = { s -> s.mobs.none { it.type == Goblin && it.hp > 0 } }
     val goblinsAttackPower = 3
 
-    fun newFight(cavern: Cavern): StartOfRound {
+    fun newCombat(cavern: Cavern): StartOfRound {
         return StartOfRound(CombatState(cavern))
+            .also { reportCombatStarted(it.state) }
     }
 
     fun fightToEnd(phase: CombatInProgress): EndOfCombat {
@@ -77,12 +78,14 @@ class FightRules(
             .filter { it.hp > 0 }
             .map { it.position }
 
-        val newState = (chooseDestination(mob.position, enemyPositions, p.state.cavern)
-            ?.let { destination -> nextStep(mob.position, destination, p.state.cavern) }
-            ?.let { nextStep -> p.state.moveMob(mob, nextStep) }
-            ?: p.state)
+        val path = chooseDestination(mob.position, enemyPositions, p.state.cavern)
+
+        val newState = path
+            ?.let { ns -> p.state.moveMob(mob, ns[1]) }
+            ?: p.state
 
         return Attack(newState, p.mobIndex)
+            .also { if (path != null) reportMobMoves(p.state, mob, path, newState) }
     }
 
     fun attackPhase(p: Attack): EndOfTurn {
@@ -91,11 +94,14 @@ class FightRules(
 
         val enemy = chooseEnemy(mob, p.state.mobs)
 
+        val attackPower = if (mob.type == Elf) elvesAttackPower else goblinsAttackPower
+
         val newState = enemy
-            ?.let { p.state.hitMob(it, if (mob.type == Elf) elvesAttackPower else goblinsAttackPower) }
+            ?.let { p.state.hitMob(it, attackPower) }
             ?: p.state
 
         return EndOfTurn(newState, p.mobIndex)
+            .also { if (enemy != null) reportMobAttacks(p.state, mob, enemy, attackPower, newState) }
     }
 }
 
