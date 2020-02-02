@@ -1,18 +1,15 @@
 package beveragebandits
 
 import pathfinder.BasicPathfinder
+import utils.listComparator
 
 data class MovePriority(val path: List<Position>) : Comparable<MovePriority> {
-    override fun compareTo(other: MovePriority): Int =
-        compareBy<MovePriority> { it.path.size }
+    override fun compareTo(other: MovePriority): Int {
+        return compareBy<MovePriority> { it.path.size }
             .thenBy { it.path.last() }
-            .thenComparator { a, b ->
-                a.path.asSequence().zip(b.path.asSequence())
-                    .map { (aa, bb) -> aa.compareTo(bb) }
-                    .firstOrNull { it != 0 }
-                    ?: 0
-            }
+            .thenBy(listComparator()) { it.path }
             .compare(this, other)
+    }
 }
 
 fun chooseDestination(
