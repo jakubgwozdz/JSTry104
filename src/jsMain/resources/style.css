@@ -48,3 +48,9 @@
     resize: vertical;
 }
 
+#cavern-input {
+    overflow: auto;
+    height: 27em;
+    line-height: 0.8;
+    resize: vertical;
+}

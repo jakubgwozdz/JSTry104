@@ -1,6 +1,6 @@
 package beveragebandits
 
-var reportCombatStarted: (state: CombatState) -> Unit = {}
+var reportCombatStarted: (CombatState) -> Unit = ::reportCombatStartedNoOp
 
 var reportMobAttacks: (
     prevState: CombatState,
@@ -8,11 +8,30 @@ var reportMobAttacks: (
     target: Mob,
     attackPower: Int,
     nextState: CombatState
-) -> Unit = { _, _, _, _, _ -> }
+) -> Unit = ::reportMobAttacksNoOp
 
 var reportMobMoves: (
     prevState: CombatState,
     mob: Mob,
     path: List<Position>,
-    CombatState
-) -> Unit = { _, _, _, _ -> }
+    nextState: CombatState
+) -> Unit = ::reportMobMovesNoOp
+
+fun reportCombatStartedNoOp(state: CombatState) {}
+
+fun reportMobAttacksNoOp(
+    prevState: CombatState,
+    attacker: Mob,
+    target: Mob,
+    attackPower: Int,
+    nextState: CombatState
+) {
+}
+
+fun reportMobMovesNoOp(
+    prevState: CombatState,
+    mob: Mob,
+    path: List<Position>,
+    nextState: CombatState
+) {
+}
