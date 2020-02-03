@@ -9,6 +9,8 @@ import beveragebandits.Position
 import beveragebandits.Reporting
 import beveragebandits.StartOfCombat
 import beveragebandits.reporting
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.html.ButtonType
 import kotlinx.html.a
 import kotlinx.html.button
@@ -24,13 +26,19 @@ import kotlinx.html.label
 import kotlinx.html.p
 import kotlinx.html.spellCheck
 import kotlinx.html.textArea
+import org.w3c.dom.CENTER
+import org.w3c.dom.CanvasRenderingContext2D
+import org.w3c.dom.CanvasTextAlign
+import org.w3c.dom.CanvasTextBaseline
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.HTMLTextAreaElement
+import org.w3c.dom.MIDDLE
 import org.w3c.dom.events.Event
 import utils.byId
 import kotlin.browser.document
 import kotlin.browser.window
+import kotlin.coroutines.suspendCoroutine
 import kotlin.js.Date
 
 fun beverageBanditsInit() {
@@ -61,15 +69,16 @@ class BrowserBeverageBanditsView(
             window.alert("Time was ${Date.now() - start}")
         }
 
-        // val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
-        // ctx.textAlign = CanvasTextAlign.CENTER
-        // ctx.textBaseline = CanvasTextBaseline.MIDDLE
-        // state.cavern.map.forEachIndexed { y, line ->
-        //     line.forEachIndexed { x, char ->
-        //         ctx.fillText("$char", x * 20.0 + 10, y * 20.0+10)
-        //     }
-        // }
-
+        if (phase is StartOfCombat) {
+            val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+            ctx.textAlign = CanvasTextAlign.CENTER
+            ctx.textBaseline = CanvasTextBaseline.MIDDLE
+            phase.state.cavern.map.forEachIndexed { y, line ->
+                line.forEachIndexed { x, char ->
+                    ctx.fillText("$char", x * 20.0 + 10, y * 20.0 + 10)
+                }
+            }
+        }
     }
 
     override fun mobAttacks(
@@ -77,21 +86,23 @@ class BrowserBeverageBanditsView(
         target: Mob,
         attackPower: Int
     ) {
-        console.log("Mob $attacker hits $target for $attackPower")
+        // console.log("Mob $attacker hits $target for $attackPower")
     }
 
     override fun mobMoves(
         mob: Mob,
         path: List<Position>
     ) {
-        console.log("Mob $mob moves to ${path[1]}")
+        // console.log("Mob $mob moves to ${path[1]}")
     }
 
     fun fight() {
         FightRules().run {
-            val s = this.newCombat(Cavern(cavernTextArea.value))
-            val e = this.fightToEnd(s)
-            console.log(e)
+            val s = newCombat(Cavern(cavernTextArea.value))
+            GlobalScope.launch {
+                val e = fightToEnd(s)
+                console.log(e)
+            }
         }
     }
 }
@@ -118,10 +129,12 @@ val container by lazy {
                 onClickFunction = ::fight
             }
         }
-        canvas {
-            id = "map-canvas"
-            width = "640"
-            height = "640"
+        div("border border-info rounded p-2") {
+            canvas {
+                id = "map-canvas"
+                width = "640"
+                height = "640"
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.3.70-eap-42"
+    kotlin("multiplatform") version "1.3.70-eap-184"
 }
 
 repositories {
