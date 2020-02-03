@@ -1,37 +1,27 @@
 package beveragebandits
 
-var reportCombatStarted: (CombatState) -> Unit = ::reportCombatStartedNoOp
-
-var reportMobAttacks: (
-    prevState: CombatState,
-    attacker: Mob,
-    target: Mob,
-    attackPower: Int,
-    nextState: CombatState
-) -> Unit = ::reportMobAttacksNoOp
-
-var reportMobMoves: (
-    prevState: CombatState,
-    mob: Mob,
-    path: List<Position>,
-    nextState: CombatState
-) -> Unit = ::reportMobMovesNoOp
-
-fun reportCombatStartedNoOp(state: CombatState) {}
-
-fun reportMobAttacksNoOp(
-    prevState: CombatState,
-    attacker: Mob,
-    target: Mob,
-    attackPower: Int,
-    nextState: CombatState
-) {
+interface Reporting {
+    fun combatPhase(phase: Phase)
+    fun mobAttacks(attacker: Mob, target: Mob, attackPower: Int)
+    fun mobMoves(mob: Mob, path: List<Position>)
 }
 
-fun reportMobMovesNoOp(
-    prevState: CombatState,
-    mob: Mob,
-    path: List<Position>,
-    nextState: CombatState
-) {
+object NoopReporting : Reporting {
+
+    override fun combatPhase(phase: Phase) {}
+
+    override fun mobAttacks(
+        attacker: Mob,
+        target: Mob,
+        attackPower: Int
+    ) {
+    }
+
+    override fun mobMoves(
+        mob: Mob,
+        path: List<Position>
+    ) {
+    }
 }
+
+var reporting: Reporting = NoopReporting

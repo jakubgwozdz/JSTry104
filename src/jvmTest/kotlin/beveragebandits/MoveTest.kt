@@ -26,6 +26,7 @@ class MoveTest {
 
         expect(output) {
             fightRules.newCombat(Cavern(input))
+                .let { fightRules.firstRound(it) }
                 .let { fightRules.firstMob(it) }
                 .let { fightRules.beginTurn(it) }
                 .let { fightRules.movePhase(it as Move) }
@@ -59,6 +60,7 @@ class MoveTest {
             """.trimIndent()
 
         val state0 = fightRules.newCombat(Cavern(input))
+            .let { fightRules.firstRound(it) }
             .let { fightRules.firstMob(it) }
         // .let { fightRules.beginTurn(it) }
 
@@ -109,6 +111,7 @@ class MoveTest {
 
         expect(1 by 3) {
             val fight = fightRules.newCombat(Cavern(input))
+                .let { fightRules.firstRound(it) }
                 .let { fightRules.firstMob(it) }
                 .let { fightRules.beginTurn(it) }
 
@@ -137,6 +140,7 @@ class MoveTest {
             """.trimIndent()
 
         val fight = fightRules.newCombat(Cavern(input))
+            .let { fightRules.firstRound(it) }
             .let { fightRules.firstMob(it) }
             .let { fightRules.beginTurn(it) }
 

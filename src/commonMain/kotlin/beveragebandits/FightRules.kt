@@ -32,7 +32,7 @@ class FightRules(
             ?: p.state
 
         return Attack(newState, p.mobIndex)
-            .also { if (path != null) reportMobMoves(p.state, mob, path, newState) }
+            .also { if (path != null) reporting.mobMoves(mob, path) }
     }
 
     fun attackPhase(p: Attack): EndOfTurn {
@@ -48,34 +48,33 @@ class FightRules(
         return EndOfTurn(newState, p.mobIndex)
             .also {
                 if (enemy != null)
-                    reportMobAttacks(p.state, mob, enemy, attackPower, newState)
+                    reporting.mobAttacks(mob, enemy, attackPower)
             }
     }
 
-    fun newCombat(cavern: Cavern): StartOfRound {
-        return StartOfRound(CombatState(cavern))
-            .also { reportCombatStarted(it.state) }
-    }
+    fun newCombat(cavern: Cavern): StartOfCombat = StartOfCombat(CombatState(cavern))
+        .also { reporting.combatPhase(it) }
 
-    fun singlePhase(phase: CombatInProgress): Phase {
-        return when (phase) {
-            is StartOfRound -> firstMob(phase) // => StartOfTurn(mobIndex = 0)
-            is StartOfTurn -> beginTurn(phase) // if (alive) => Move else => EndOfTurn
-            is Move -> movePhase(phase)        // if (hasEnemies) => Attack else => CombatEnded
-            is Attack -> attackPhase(phase)    // => EndOfTurn
-            is EndOfTurn -> nextMob(phase)     // if (allMobsPlayed) => EndOfRound else => StartOfTurn(mobIndex++)
-            is EndOfRound -> nextRound(phase)  // => StartOfRound(round++)
-        }
+    fun singlePhase(phase: CombatInProgress): Phase = when (phase) {
+        is StartOfCombat -> firstRound(phase) // => StartOfRound(round = 0)
+        is StartOfRound -> firstMob(phase) // => StartOfTurn(mobIndex = 0)
+        is StartOfTurn -> beginTurn(phase) // if (alive) => Move else => EndOfTurn
+        is Move -> movePhase(phase)        // if (hasEnemies) => Attack else => CombatEnded
+        is Attack -> attackPhase(phase)    // => EndOfTurn
+        is EndOfTurn -> nextMob(phase)     // if (allMobsPlayed) => EndOfRound else => StartOfTurn(mobIndex++)
+        is EndOfRound -> nextRound(phase)  // => StartOfRound(round++)
     }
+        .also { reporting.combatPhase(it) }
+
+    fun firstRound(s: StartOfCombat) = StartOfRound(s.state.also { check(it.roundsCompleted == 0) })
 
     fun firstMob(s: StartOfRound) = StartOfTurn(s.state, 0)
 
-    fun nextMob(phase: EndOfTurn): Phase {
-        return if (phase.mobIndex + 1 in phase.state.mobs.indices)
+    fun nextMob(phase: EndOfTurn): Phase =
+        if (phase.mobIndex + 1 in phase.state.mobs.indices)
             StartOfTurn(phase.state, phase.mobIndex + 1)
         else
             EndOfRound(phase.state)
-    }
 
     fun nextRound(phase: EndOfRound) = StartOfRound(phase.state.nextRound())
 
@@ -117,5 +116,4 @@ class FightRules(
             }
         }
     }
-
 }

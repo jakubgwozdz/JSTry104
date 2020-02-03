@@ -71,6 +71,10 @@ sealed class CombatInProgress(
     state: CombatState
 ) : Phase(state)
 
+class StartOfCombat(
+    state: CombatState
+): CombatInProgress(state)
+
 class StartOfRound(
     state: CombatState
 ) : CombatInProgress(state)

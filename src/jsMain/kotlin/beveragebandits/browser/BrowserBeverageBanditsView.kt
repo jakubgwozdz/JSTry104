@@ -1,13 +1,14 @@
 package beveragebandits.browser
 
 import beveragebandits.Cavern
-import beveragebandits.CombatState
+import beveragebandits.EndOfCombat
 import beveragebandits.FightRules
 import beveragebandits.Mob
+import beveragebandits.Phase
 import beveragebandits.Position
-import beveragebandits.reportCombatStarted
-import beveragebandits.reportMobAttacks
-import beveragebandits.reportMobMoves
+import beveragebandits.Reporting
+import beveragebandits.StartOfCombat
+import beveragebandits.reporting
 import kotlinx.html.ButtonType
 import kotlinx.html.a
 import kotlinx.html.button
@@ -23,17 +24,14 @@ import kotlinx.html.label
 import kotlinx.html.p
 import kotlinx.html.spellCheck
 import kotlinx.html.textArea
-import org.w3c.dom.CENTER
-import org.w3c.dom.CanvasRenderingContext2D
-import org.w3c.dom.CanvasTextAlign
-import org.w3c.dom.CanvasTextBaseline
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.HTMLTextAreaElement
-import org.w3c.dom.MIDDLE
 import org.w3c.dom.events.Event
 import utils.byId
 import kotlin.browser.document
+import kotlin.browser.window
+import kotlin.js.Date
 
 fun beverageBanditsInit() {
     val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
@@ -41,47 +39,50 @@ fun beverageBanditsInit() {
     placeholder.remove()
     parent!!.append(container)
 
-    reportCombatStarted = view::reportCombatStarted
-    reportMobMoves = view::reportMobMoves
-    reportMobAttacks = view::reportMobAttacks
+    reporting = view
 }
 
 class BrowserBeverageBanditsView(
     private val cavernTextArea: HTMLTextAreaElement,
     private val canvas: HTMLCanvasElement
-) {
+): Reporting {
 
     init {
 
     }
 
-    fun reportCombatStarted(state: CombatState) {
-        console.log("Combat started: ${state.cavern}")
-        val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
-        ctx.textAlign = CanvasTextAlign.CENTER
-        ctx.textBaseline = CanvasTextBaseline.MIDDLE
-        state.cavern.map.forEachIndexed { y, line ->
-            line.forEachIndexed { x, char ->
-                ctx.fillText("$char", x * 20.0 + 10, y * 20.0+10)
-            }
+    var start = Date.now()
+
+    override fun combatPhase(phase: Phase) {
+
+        if (phase is StartOfCombat) {
+            start = Date.now()
+        } else if (phase is EndOfCombat) {
+            window.alert("Time was ${Date.now() - start}")
         }
+
+        // val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+        // ctx.textAlign = CanvasTextAlign.CENTER
+        // ctx.textBaseline = CanvasTextBaseline.MIDDLE
+        // state.cavern.map.forEachIndexed { y, line ->
+        //     line.forEachIndexed { x, char ->
+        //         ctx.fillText("$char", x * 20.0 + 10, y * 20.0+10)
+        //     }
+        // }
+
     }
 
-    fun reportMobAttacks(
-        prevState: CombatState,
+    override fun mobAttacks(
         attacker: Mob,
         target: Mob,
-        attackPower: Int,
-        nextState: CombatState
+        attackPower: Int
     ) {
         console.log("Mob $attacker hits $target for $attackPower")
     }
 
-    fun reportMobMoves(
-        prevState: CombatState,
+    override fun mobMoves(
         mob: Mob,
-        path: List<Position>,
-        nextState: CombatState
+        path: List<Position>
     ) {
         console.log("Mob $mob moves to ${path[1]}")
     }
@@ -96,7 +97,7 @@ class BrowserBeverageBanditsView(
 }
 
 val container by lazy {
-    document.create.div("container-fluid text-monospace d-flex flex-column") {
+    document.create.div("container text-monospace d-flex flex-column") {
         h1 { +"Beverage Bandits" }
         p {
             +"Download your puzzle input from "
