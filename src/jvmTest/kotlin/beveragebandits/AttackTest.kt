@@ -63,6 +63,5 @@ class AttackTest {
 
         expect(text33a) { state33a.state.description() }
         expect(listOf(gob1, elf1, elf2, gob2, elf4, elf5, elf6)) { state33a.state.mobs.filter { it.hp > 0 } }
-        expect(1) { (state33a as MobTurn).mobIndex }
     }
 }
