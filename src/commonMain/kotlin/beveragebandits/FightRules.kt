@@ -55,7 +55,7 @@ class FightRules(
     fun newCombat(cavern: Cavern): StartOfCombat = StartOfCombat(CombatState(cavern))
         .also { reporting.combatPhase(it) }
 
-    fun singlePhase(phase: CombatInProgress): Phase = when (phase) {
+    fun nextPhase(phase: CombatInProgress): Phase = when (phase) {
         is StartOfCombat -> firstRound(phase) // => StartOfRound(round = 0)
         is StartOfRound -> firstMob(phase) // => StartOfTurn(mobIndex = 0)
         is StartOfTurn -> beginTurn(phase) // if (alive) => Move else => EndOfTurn
@@ -89,7 +89,7 @@ class FightRules(
         while (true) {
             p = when (p) {
                 is EndOfCombat -> return p
-                is CombatInProgress -> singlePhase(p)
+                is CombatInProgress -> nextPhase(p)
             }
         }
     }
@@ -100,7 +100,7 @@ class FightRules(
             p = when (p) {
                 is EndOfCombat -> return p
                 is EndOfRound -> return p
-                is CombatInProgress -> singlePhase(p) // else
+                is CombatInProgress -> nextPhase(p) // else
             }
         }
     }
@@ -112,7 +112,7 @@ class FightRules(
                 is EndOfCombat -> return p
                 is EndOfRound -> return p
                 is EndOfTurn -> return p
-                is CombatInProgress -> singlePhase(p) // else
+                is CombatInProgress -> nextPhase(p) // else
             }
         }
     }

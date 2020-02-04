@@ -11,7 +11,7 @@ enum class MobType(val char: Char) {
     }
 }
 
-data class Mob(val position: Position, val type: MobType, val hp: Int = 200) {
+data class Mob(val id:Int, val position: Position, val type: MobType, val hp: Int = 200) {
     fun withPosition(p: Position) = copy(position = p)
     fun withHp(hp: Int) = copy(hp = hp)
 }
@@ -24,7 +24,7 @@ data class CombatState(
 
     constructor(cavern: Cavern) : this(
         cavern,
-        cavern.mobs().map { (position, type) -> Mob(position, type) }.sortedBy { it.position },
+        cavern.mobs().mapIndexed { id, (position, type) -> Mob(id, position, type) }.sortedBy { it.position },
         0
     )
 

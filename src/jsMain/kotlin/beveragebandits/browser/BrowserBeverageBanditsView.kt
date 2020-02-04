@@ -1,16 +1,22 @@
 package beveragebandits.browser
 
 import beveragebandits.Cavern
+import beveragebandits.CombatInProgress
+import beveragebandits.ElvesWin
 import beveragebandits.EndOfCombat
 import beveragebandits.FightRules
 import beveragebandits.Mob
+import beveragebandits.MobType
 import beveragebandits.Phase
 import beveragebandits.Position
 import beveragebandits.Reporting
 import beveragebandits.StartOfCombat
 import beveragebandits.reporting
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import kotlinx.html.ButtonType
 import kotlinx.html.a
 import kotlinx.html.button
@@ -26,20 +32,16 @@ import kotlinx.html.label
 import kotlinx.html.p
 import kotlinx.html.spellCheck
 import kotlinx.html.textArea
-import org.w3c.dom.CENTER
 import org.w3c.dom.CanvasRenderingContext2D
-import org.w3c.dom.CanvasTextAlign
-import org.w3c.dom.CanvasTextBaseline
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.HTMLTextAreaElement
-import org.w3c.dom.MIDDLE
 import org.w3c.dom.events.Event
 import utils.byId
 import kotlin.browser.document
 import kotlin.browser.window
-import kotlin.coroutines.suspendCoroutine
 import kotlin.js.Date
+import kotlin.math.PI
 
 fun beverageBanditsInit() {
     val placeholder = document.getElementById("placeholder") as HTMLParagraphElement
@@ -53,7 +55,7 @@ fun beverageBanditsInit() {
 class BrowserBeverageBanditsView(
     private val cavernTextArea: HTMLTextAreaElement,
     private val canvas: HTMLCanvasElement
-): Reporting {
+) : Reporting {
 
     init {
 
@@ -66,20 +68,52 @@ class BrowserBeverageBanditsView(
         if (phase is StartOfCombat) {
             start = Date.now()
         } else if (phase is EndOfCombat) {
-            window.alert("Time was ${Date.now() - start}")
+            window.alert(
+                "After ${phase.state.roundsCompleted} rounds (${Date.now() - start}ms), " +
+                    "outcome is ${phase.state.outcome}, " +
+                    "${if (phase is ElvesWin) "Elves" else "Golbins"} won"
+            )
         }
+        draw(phase)
+    }
 
-        if (phase is StartOfCombat) {
-            val ctx = canvas.getContext("2d") as CanvasRenderingContext2D
-            ctx.textAlign = CanvasTextAlign.CENTER
-            ctx.textBaseline = CanvasTextBaseline.MIDDLE
+    private fun draw(phase: Phase) {
+        (canvas.getContext("2d") as CanvasRenderingContext2D).run {
+            fillStyle = "#111"
+            fillRect(1.0, 1.0, 638.0, 638.0)
             phase.state.cavern.map.forEachIndexed { y, line ->
                 line.forEachIndexed { x, char ->
-                    ctx.fillText("$char", x * 20.0 + 10, y * 20.0 + 10)
+                    if (char == '#') drawWall(x, y)
                 }
             }
+            phase.state.mobs
+                .filter { it.hp > 0 }
+                .forEach { drawMob(it) }
         }
     }
+
+    private fun CanvasRenderingContext2D.drawMob(mob: Mob) {
+        val x = mob.position.x * 20 + 10.0
+        val y = mob.position.y * 20 + 10.0
+        fillStyle = if (mob.type == MobType.Goblin) "#3f3" else "#f33"
+        beginPath()
+        ellipse(x, y, 3.0, 3.0, 0.0, 0.0, 2 * PI)
+        fill()
+        beginPath()
+        ellipse(x, y + 4, 2.0, 4.0, 0.0, 0.0, 2 * PI)
+        fill()
+        fillStyle = "#33f"
+        fillRect(x - 8, y - 8, 17.0 * mob.hp / 200.0, 2.0)
+        strokeStyle = "#000"
+        strokeRect(x - 9, y - 9, 18.0, 4.0)
+    }
+
+    private fun CanvasRenderingContext2D.drawWall(x: Int, y: Int) {
+        fillStyle = "#fec"
+        fillRect(x * 20.0 + 1, y * 20.0 + 1, 18.0, 18.0)
+    }
+
+    var job: Job? = null
 
     override fun mobAttacks(
         attacker: Mob,
@@ -97,11 +131,15 @@ class BrowserBeverageBanditsView(
     }
 
     fun fight() {
-        FightRules().run {
-            val s = newCombat(Cavern(cavernTextArea.value))
-            GlobalScope.launch {
-                val e = fightToEnd(s)
-                console.log(e)
+        job?.cancel()
+        job = FightRules().run {
+            GlobalScope.launch(Dispatchers.Default) {
+                var phase: Phase = newCombat(Cavern(cavernTextArea.value))
+                while (phase is CombatInProgress) {
+                    phase = nextPhase(phase)
+                    yield()
+                }
+                console.log(phase)
             }
         }
     }
