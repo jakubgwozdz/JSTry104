@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.3.70-eap-42"
+    kotlin("multiplatform") version "1.3.70-eap-184"
 }
 
 repositories {
@@ -11,25 +11,24 @@ repositories {
 val versions by extra {
     mapOf(
         "html" to "0.6.12",
-        "coroutines" to "1.3.3"
-    )
+        "coroutines" to "1.3.3",
+        "assertj" to "3.11.1",
+        "junit" to "5.5.2",
+        "junit-console" to "1.5.2"
+        )
 }
 
 kotlin {
     js {
-        val main by compilations.getting {
-            kotlinOptions {
-                freeCompilerArgs = freeCompilerArgs +
-                        "-Xuse-experimental=kotlinx.coroutines.FlowPreview" +
-                        "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi"
-            }
-        }
 
         browser {
             webpackTask {
-                this.sourceMaps = true
+//                this.sourceMaps = true
             }
         }
+    }
+
+    jvm {
     }
 
     sourceSets {
@@ -40,18 +39,25 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-common:${versions["coroutines"]}")
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-            }
-        }
-
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 implementation("org.jetbrains.kotlinx:kotlinx-html-js:${versions["html"]}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:${versions["coroutines"]}")
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-jdk8"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions["coroutines"]}")
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
             }
         }
 
@@ -61,7 +67,29 @@ kotlin {
             }
         }
 
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+//                implementation("org.assertj:assertj-core:${versions["assertj"]}")
+//                implementation("org.junit.platform:junit-platform-console:${versions["junit-console"]}")
+//                implementation("org.junit.jupiter:junit-jupiter-params:${versions["junit"]}")
+                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:${versions["junit"]}")
+            }
+        }
+
+        all {
+            languageSettings.apply {
+                languageVersion = "1.3"
+                apiVersion = "1.3"
+                useExperimentalAnnotation("kotlin.ExperimentalStdlibApi")
+                useExperimentalAnnotation("kotlinx.coroutines.FlowPreview")
+                useExperimentalAnnotation("kotlinx.coroutines.ExperimentalCoroutinesApi")
+            }
+        }
 
     }
 
+    tasks.getByName("jvmTest", Test::class) {
+        useJUnitPlatform()
+    }
 }

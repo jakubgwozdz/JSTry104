@@ -31,6 +31,7 @@ import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.HTMLPreElement
 import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
+import utils.byId
 import kotlin.browser.document
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -147,9 +148,6 @@ class BrowserCryostasisView(
 
 val view by lazy {
 
-    inline fun <reified K : HTMLElement> Document.byId(elementId: String) =
-        getElementById(elementId) as K
-
     with(container.ownerDocument!!) {
         BrowserCryostasisView(
             byId("program-input"),
@@ -167,7 +165,7 @@ val view by lazy {
 
 val container by lazy {
     document.create.div("container-fluid text-monospace  d-flex flex-column") {
-        h1 { +"Cryostasis v0.9" }
+        h1 { +"Cryostasis v0.91" }
         p {
             +"Download your puzzle input from "
             a("https://adventofcode.com/2019/day/25") { +"Advent of Code 2019 day 25" }

@@ -1,5 +1,6 @@
 package try104
 
+import beveragebandits.browser.beverageBanditsInit
 import cryostasis.browser.cryostasisInit
 import kotlin.browser.document
 import kotlin.browser.window
@@ -13,6 +14,7 @@ fun main() {
     val w: dynamic = window
     w.jstry104 = Any()
     w.jstry104.cryostasisInit = ::cryostasisInit
+    w.jstry104.beverageBanditsInit = ::beverageBanditsInit
     w.jstry104.indexInit = ::load
     w.jstry104.indexClick = ::click
 }
