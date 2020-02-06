@@ -149,7 +149,7 @@ class FightRulesTest {
 
             do {
                 attackPower++
-                val rules = FightRules(attackPower, {s->s.mobs.any { it.type==MobType.Elf && it.hp <= 0 }})
+                val rules = FightRules(attackPower) { s->s.mobs.any { it.type==MobType.Elf && it.hp <= 0 }}
                 phase = rules.newCombat(Cavern(input))
                 phase = rules.fightToEnd(phase)
 

@@ -6,6 +6,7 @@ import beveragebandits.CombatState
 import beveragebandits.ElvesWin
 import beveragebandits.EndOfCombat
 import beveragebandits.FightRules
+import beveragebandits.GoblinsWin
 import beveragebandits.Mob
 import beveragebandits.MobType
 import beveragebandits.Phase
@@ -31,7 +32,9 @@ import kotlinx.html.id
 import kotlinx.html.input
 import kotlinx.html.js.div
 import kotlinx.html.js.onClickFunction
+import kotlinx.html.js.onSubmitFunction
 import kotlinx.html.label
+import kotlinx.html.onClick
 import kotlinx.html.option
 import kotlinx.html.p
 import kotlinx.html.select
@@ -40,7 +43,9 @@ import kotlinx.html.textArea
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
 import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLLabelElement
 import org.w3c.dom.HTMLParagraphElement
+import org.w3c.dom.HTMLSelectElement
 import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
 import utils.byId
@@ -58,31 +63,35 @@ fun beverageBanditsInit() {
     reporting = view
 }
 
-val scale = 44.0
+val scale = 748.0 / 32
 
 class BrowserBeverageBanditsView(
     private val cavernTextArea: HTMLTextAreaElement,
     private val canvas: HTMLCanvasElement,
     private val elvesApInput: HTMLInputElement,
-    private val goblinsWinConditionInput: HTMLInputElement
+    private val goblinsWinConditionInput: HTMLSelectElement,
+    private val timeLabel: HTMLLabelElement,
+    private val framerateLabel: HTMLLabelElement,
+    private val outcomeLabel: HTMLLabelElement
 ) : Reporting {
 
-    init {
-
-    }
-
     var start = Date.now()
+    var frames = 0
 
     override fun combatPhase(phase: Phase) {
 
         if (phase is StartOfCombat) {
             start = Date.now()
-        } else if (phase is EndOfCombat) {
-            window.alert(
-                "After ${phase.state.roundsCompleted} rounds (${Date.now() - start}ms), " +
-                    "outcome is ${phase.state.outcome}, " +
-                    "${if (phase is ElvesWin) "Elves" else "Golbins"} won"
-            )
+            frames = 0
+        } else {
+            frames++
+            val time = Date.now() - start
+            timeLabel.textContent = "$time ms"
+            framerateLabel.textContent = "${(frames*1000/(time+1)).toInt()} fps"
+            outcomeLabel.textContent = "${phase.state.outcome}"
+            if (phase is ElvesWin) outcomeLabel.textContent+=", Elves won"
+            if (phase is GoblinsWin) outcomeLabel.textContent+=", Goblins won"
+
         }
         draw(phase)
     }
@@ -146,13 +155,17 @@ class BrowserBeverageBanditsView(
         // console.log("Mob $mob moves to ${path[1]}")
     }
 
+    val allElvesDie: (CombatState) -> Boolean = { s -> s.mobs.none { it.type == MobType.Elf && it.hp > 0 } }
+    val anyElfDies: (CombatState) -> Boolean = { s -> s.mobs.any { it.type == MobType.Elf && it.hp <= 0 } }
+
     fun fight() {
         job?.cancel()
 
-        val goblinsWin: (CombatState) -> Boolean = if (goblinsWinConditionInput.value.toLowerCase().startsWith("any")) {
-            { s -> s.mobs.none { it.type == MobType.Elf && it.hp > 0 } }
+        val condition = goblinsWinConditionInput.value.toLowerCase()
+        val goblinsWin: (CombatState) -> Boolean = if (condition.startsWith("any")) {
+            allElvesDie
         } else {
-            { s -> s.mobs.any { it.type == MobType.Elf && it.hp <= 0 } }
+            anyElfDies
         }
         val elvesAttackPower = elvesApInput.value.toInt()
         job = FightRules(elvesAttackPower, goblinsWin).run {
@@ -169,7 +182,7 @@ class BrowserBeverageBanditsView(
 }
 
 val container by lazy {
-    document.create.div("container text-monospace d-flex flex-column") {
+    document.create.div("container-md d-flex flex-column") {
         h1 { +"Beverage Bandits" }
         p {
             +"Download your puzzle input from "
@@ -177,13 +190,14 @@ val container by lazy {
             +" or use mine."
         }
         form {
-            div("form-row") {
+            onSubmitFunction = ::fight
+            div("form-row pd-5") {
                 div("form-group col-md-6") {
                     label {
                         htmlFor = "cavern-input"
                         +"Map input"
                     }
-                    textArea(classes = "form-control text-light bg-secondary") {
+                    textArea(classes = "form-control text-monospace text-light bg-secondary") {
                         +beveragebandits.jakubgwozdz.cavernInput
                         id = "cavern-input"
                         spellCheck = false
@@ -195,7 +209,7 @@ val container by lazy {
                             htmlFor = "elves-ap-input"
                             +"Map input"
                         }
-                        input(InputType.text, classes = "form-control text-light bg-secondary") {
+                        input(InputType.number, classes = "form-control text-light bg-secondary") {
                             value = "3"
                             id = "elves-ap-input"
                         }
@@ -208,6 +222,7 @@ val container by lazy {
                         select("form-control text-light bg-secondary") {
                             id = "goblins-win-condition"
                             option {
+                                selected = true
                                 value = "all"
                                 +"All elves die"
                             }
@@ -224,11 +239,40 @@ val container by lazy {
                 }
             }
         }
-        div("border border-info rounded p-2 mu-5") {
-            canvas("container-lg") {
+        div("row border border-info rounded p-2 mu-5") {
+            canvas("col-md-8") {
                 id = "map-canvas"
                 width = "${scale * 32}"
                 height = "${scale * 32}"
+            }
+            div("col-md-4") {
+                div("form-group") {
+                    label {
+                        htmlFor = "time-output"
+                        +"Time"
+                    }
+                    label("form-control text-light bg-secondary") {
+                        id = "time-output"
+                    }
+                }
+                div("form-group") {
+                    label {
+                        htmlFor = "framerate-output"
+                        +"Framerate"
+                    }
+                    label("form-control text-light bg-secondary") {
+                        id = "framerate-output"
+                    }
+                }
+                div("form-group") {
+                    label {
+                        htmlFor = "outcome-output"
+                        +"Outcome"
+                    }
+                    label("form-control text-light bg-secondary") {
+                        id = "outcome-output"
+                    }
+                }
             }
         }
     }
@@ -240,12 +284,16 @@ val view by lazy {
             byId("cavern-input"),
             byId("map-canvas"),
             byId("elves-ap-input"),
-            byId("goblins-win-condition")
+            byId("goblins-win-condition"),
+            byId("time-output"),
+            byId("framerate-output"),
+            byId("outcome-output")
         )
     }
 }
 
 fun fight(e: Event) {
     view.fight()
+    e.preventDefault()
 }
 
