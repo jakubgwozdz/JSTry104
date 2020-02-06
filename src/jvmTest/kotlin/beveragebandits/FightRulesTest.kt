@@ -1,7 +1,10 @@
 package beveragebandits
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.expect
+import kotlin.test.fail
 
 class FightRulesTest {
 
@@ -159,4 +162,20 @@ class FightRulesTest {
             phase.state.outcome
         }
     }
+
+    @Test
+    fun elvesAP10() {
+        val input = beveragebandits.jakubgwozdz.cavernInput
+
+        val fightRules10 = FightRules(10)
+        val startOfCombat = fightRules10.newCombat(Cavern(input))
+        val endOfCombat = fightRules10.fightToEnd(startOfCombat)
+
+        assertEquals(ElvesWin::class, endOfCombat::class)
+        endOfCombat.state.mobs.firstOrNull { it.type == MobType.Goblin && it.hp > 0 }
+            ?.let { fail("$it is alive") }
+    }
+
+
+
 }

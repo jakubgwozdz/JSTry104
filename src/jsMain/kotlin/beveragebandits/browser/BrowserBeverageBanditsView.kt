@@ -4,7 +4,6 @@ import beveragebandits.Cavern
 import beveragebandits.CombatInProgress
 import beveragebandits.CombatState
 import beveragebandits.ElvesWin
-import beveragebandits.EndOfCombat
 import beveragebandits.FightRules
 import beveragebandits.GoblinsWin
 import beveragebandits.Mob
@@ -34,7 +33,6 @@ import kotlinx.html.js.div
 import kotlinx.html.js.onClickFunction
 import kotlinx.html.js.onSubmitFunction
 import kotlinx.html.label
-import kotlinx.html.onClick
 import kotlinx.html.option
 import kotlinx.html.p
 import kotlinx.html.select
@@ -50,7 +48,6 @@ import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
 import utils.byId
 import kotlin.browser.document
-import kotlin.browser.window
 import kotlin.js.Date
 import kotlin.math.PI
 
@@ -162,7 +159,7 @@ class BrowserBeverageBanditsView(
         job?.cancel()
 
         val condition = goblinsWinConditionInput.value.toLowerCase()
-        val goblinsWin: (CombatState) -> Boolean = if (condition.startsWith("any")) {
+        val goblinsWin: (CombatState) -> Boolean = if (condition.startsWith("all")) {
             allElvesDie
         } else {
             anyElfDies
@@ -207,7 +204,7 @@ val container by lazy {
                     div("form-group") {
                         label {
                             htmlFor = "elves-ap-input"
-                            +"Map input"
+                            +"Elves Attack Power"
                         }
                         input(InputType.number, classes = "form-control text-light bg-secondary") {
                             value = "3"
