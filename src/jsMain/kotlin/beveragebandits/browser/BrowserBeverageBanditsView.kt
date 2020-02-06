@@ -84,11 +84,10 @@ class BrowserBeverageBanditsView(
             frames++
             val time = Date.now() - start
             timeLabel.textContent = "$time ms"
-            framerateLabel.textContent = "${(frames*1000/(time+1)).toInt()} fps"
+            framerateLabel.textContent = "${(frames * 1000 / (time + 1)).toInt()} fps"
             outcomeLabel.textContent = "${phase.state.outcome}"
-            if (phase is ElvesWin) outcomeLabel.textContent+=", Elves won"
-            if (phase is GoblinsWin) outcomeLabel.textContent+=", Goblins won"
-
+            if (phase is ElvesWin) outcomeLabel.textContent += ", Elves won"
+            if (phase is GoblinsWin) outcomeLabel.textContent += ", Goblins won"
         }
         draw(phase)
     }
@@ -102,10 +101,27 @@ class BrowserBeverageBanditsView(
                     if (char == '#') drawWall(x, y)
                 }
             }
+
+            paths.values.filterNotNull().forEach { path -> drawPath(path) }
+
             phase.state.mobs
                 .filter { it.hp > 0 }
                 .forEach { drawMob(it) }
         }
+    }
+
+    private fun CanvasRenderingContext2D.drawPath(path: List<Position>) {
+        strokeStyle = "#444"
+        beginPath()
+        val x = path.first().x * scale + scale / 2
+        val y = path.first().y * scale + scale / 2
+        moveTo(x, y)
+        path.forEach { (py,px)->
+            val x = px * scale + scale / 2
+            val y = py * scale + scale / 2
+            lineTo(x,y)
+        }
+        stroke()
     }
 
     private fun CanvasRenderingContext2D.drawMob(mob: Mob) {
@@ -139,16 +155,20 @@ class BrowserBeverageBanditsView(
         // console.log("Mob $attacker hits $target for $attackPower")
     }
 
+    val paths = mutableMapOf<Int, List<Position>?>()
+
     override fun mobMoves(
         mob: Mob,
         path: List<Position>
     ) {
+        paths[mob.id] = path
         // console.log("Mob $mob moves to ${path[1]}")
     }
 
     override fun mobStops(
         mob: Mob
     ) {
+        paths[mob.id] = null
         // console.log("Mob $mob moves to ${path[1]}")
     }
 
