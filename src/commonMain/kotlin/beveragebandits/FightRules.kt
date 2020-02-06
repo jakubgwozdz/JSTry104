@@ -32,7 +32,7 @@ class FightRules(
             ?: p.state
 
         return Attack(newState, p.mobIndex)
-            .also { if (path != null) reporting.mobMoves(mob, path) }
+            .also { if (path != null) reporting.mobMoves(mob, path) else  reporting.mobStops(mob) }
     }
 
     fun attackPhase(p: Attack): EndOfTurn {
