@@ -2,6 +2,7 @@ package beveragebandits.browser
 
 import beveragebandits.Cavern
 import beveragebandits.CombatInProgress
+import beveragebandits.CombatState
 import beveragebandits.ElvesWin
 import beveragebandits.EndOfCombat
 import beveragebandits.FightRules
@@ -38,6 +39,7 @@ import kotlinx.html.spellCheck
 import kotlinx.html.textArea
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.Event
@@ -60,7 +62,9 @@ val scale = 44.0
 
 class BrowserBeverageBanditsView(
     private val cavernTextArea: HTMLTextAreaElement,
-    private val canvas: HTMLCanvasElement
+    private val canvas: HTMLCanvasElement,
+    private val elvesApInput: HTMLInputElement,
+    private val goblinsWinConditionInput: HTMLInputElement
 ) : Reporting {
 
     init {
@@ -144,7 +148,14 @@ class BrowserBeverageBanditsView(
 
     fun fight() {
         job?.cancel()
-        job = FightRules().run {
+
+        val goblinsWin: (CombatState) -> Boolean = if (goblinsWinConditionInput.value.toLowerCase().startsWith("any")) {
+            { s -> s.mobs.none { it.type == MobType.Elf && it.hp > 0 } }
+        } else {
+            { s -> s.mobs.any { it.type == MobType.Elf && it.hp <= 0 } }
+        }
+        val elvesAttackPower = elvesApInput.value.toInt()
+        job = FightRules(elvesAttackPower, goblinsWin).run {
             GlobalScope.launch(Dispatchers.Default) {
                 var phase: Phase = newCombat(Cavern(cavernTextArea.value))
                 while (phase is CombatInProgress) {
@@ -197,9 +208,11 @@ val container by lazy {
                         select("form-control text-light bg-secondary") {
                             id = "goblins-win-condition"
                             option {
+                                value = "all"
                                 +"All elves die"
                             }
                             option {
+                                value = "any"
                                 +"Any elf dies"
                             }
                         }
@@ -225,7 +238,9 @@ val view by lazy {
     with(container.ownerDocument!!) {
         BrowserBeverageBanditsView(
             byId("cavern-input"),
-            byId("map-canvas")
+            byId("map-canvas"),
+            byId("elves-ap-input"),
+            byId("goblins-win-condition")
         )
     }
 }
