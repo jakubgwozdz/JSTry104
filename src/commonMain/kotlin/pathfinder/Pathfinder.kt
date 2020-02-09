@@ -1,8 +1,6 @@
 package pathfinder
 
-import beveragebandits.FightRules
-import beveragebandits.Position
-import utils.PriorityQueue
+import utils.Queue
 
 /**
  * T - location
@@ -15,7 +13,6 @@ interface Pathfinder<T : Any, R : Any> {
 
 open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
     val loggingOp: (() -> Any) -> Unit = {},
-    val loggingFound: Boolean = false,
     val adderOp: (R, T) -> R,
     val distanceOp: ((R) -> I),
     val meaningfulOp: (R, I) -> Boolean = { _, _ -> true },
@@ -31,7 +28,7 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
         while (toVisit.isNotEmpty()) {
             val state = pick()
             waysOutOp(state)
-                .also { loggingOp { "WaysOut for $state: $it" } }
+                // .also { loggingOp { "WaysOut for $state: $it" } }
                 .map { next -> adderOp(state, next) }
                 .forEach { r ->
                     if (endOp(r)) {
@@ -55,7 +52,7 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
         if (c == null || c.second > distance) {
             val new = nextState to distance
             toVisit.offer(new)
-            loggingOp { "adding $nextState with distance $distance" }
+            // loggingOp { "adding $nextState with distance $distance" }
         } else loggingOp { "skipping $nextState with distance $distance, we got better result already" }
     }
 
@@ -64,7 +61,7 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
         val c = currentBest
         if (c == null || c.second > distance) {
             currentBest = nextState to distance
-            if (loggingFound) loggingOp { "FOUND $nextState with distance $distance" }
+            // if (loggingFound) loggingOp { "FOUND $nextState with distance $distance" }
         } else loggingOp { "skipping found $nextState with distance $distance, we got better result already" }
     }
 
@@ -75,13 +72,14 @@ open class BFSPathfinder<T : Any, R : Any, I : Comparable<I>>(
     }
 
     private var currentBest: Pair<R, I>? = null
-    private val toVisit = PriorityQueue<Pair<R, I>>(priority)
+    private val toVisit = Queue<Pair<R, I>>()
+    // private val toVisit = PriorityQueue<Pair<R, I>>(priority)
 //    private val toVisit: MutableList<Triple<T, R, I>> = mutableListOf()
 
 }
 
 class BasicPathfinder<T :Any, I:Comparable<I>>(
-    loggingOp: (Any) -> Unit = {},
+    loggingOp: (()->Any) -> Unit = {},
     adderOp: (List<T>, T) -> List<T> = { l, t -> l + t },
     distanceOp: ((List<T>) -> I),
     waysOutOp: (List<T>) -> Iterable<T>,

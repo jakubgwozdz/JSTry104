@@ -250,7 +250,7 @@ val container by lazy {
                         }
                     }
                     button(type = ButtonType.button, classes = "btn btn-outline-primary") {
-                        +"Fight!"
+                        +"Fight"
                         onClickFunction = ::fight
                     }
                 }
